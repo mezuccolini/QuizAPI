@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>QuizAPI Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background: #f5f6fa;
+            color: #2f3640;
+        }
+
+        h1 {
+            color: #273c75;
+        }
+
+        form, #fileTable {
+            margin-bottom: 1.5rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        input, button {
+            font-size: 1rem;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #273c75;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+            button:hover {
+                background-color: #40739e;
+            }
+
+        .danger {
+            background-color: #c23616;
+        }
+
+            .danger:hover {
+                background-color: #e84118;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #dcdde1;
+            text-align: left;
+        }
+
+        #status {
+            white-space: pre-wrap;
+            font-family: monospace;
+            margin-top: 1rem;
+            color: #192a56;
+        }
+    
+.muted { color: #718093; font-size: 0.95rem; }
+.status { margin-top: 0.5rem; color: #353b48; }
+.pill { display:inline-block; padding:2px 8px; border-radius:12px; background:#dcdde1; font-size:0.85rem; }
+.danger { background:#e84118; color:white; }
+.ok { background:#44bd32; color:white; }
+.warn { background:#fbc531; }
+
+</style>
+</head>
+<body>
+    <h1>QuizAPI Admin Panel</h1>
+    <p style="margin-top: -0.5rem;">
+        <a href="/quiz.html">Open Quiz Runner</a>
+    </p>
+
+    <form id="loginForm">
+        <h3>Admin Login</h3>
+        <label>Email:</label><br />
+        <input type="email" id="email" placeholder="admin@quizapi.local" required /><br />
+        <label>Password:</label><br />
+        <input type="password" id="password" value="Admin@123" required /><br />
+        <button type="submit">Login</button>
+    </form>
+
+    <form id="uploadForm" enctype="multipart/form-data" style="display:none;">
+        <h3>Upload Quiz File (.csv / .txt)</h3>
+        <input type="file" id="fileInput" name="File" accept=".csv,.txt" required />
+        <button type="submit">Upload</button>
+        <button type="button" id="logoutBtn" class="danger">Logout</button>
+    </form>
+
+    <div id="fileTable" style="display:none;">
+        <h3>Uploaded Files</h3>
+        <table>
+            <thead>
+                <tr><th>File Name</th><th>Size (KB)</th><th>Uploaded</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="fileList"></tbody>
+        </table>
+    </div>
+
+    <div id="status"></div>
+
+    <!-- OK Keep this div OUTSIDE #status -->
+    <div id="userManager" style="display:none;">
+        <h3>User Management</h3>
+        <form id="createUserForm">
+            <input type="email" id="newUserEmail" placeholder="New user email" required />
+            <input type="password" id="newUserPassword" placeholder="Password" required />
+            <select id="newUserRole">
+                <option value="User">User</option>
+                <option value="Admin">Admin</option>
+            </select>
+            <button type="submit">Create User</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr><th>Email</th><th>Role</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="userList"></tbody>
+        </table>
+    </div>
+
+    <div id="smtpSettings" style="display:none;">
+        <h3>SMTP Settings</h3>
+        <div class="muted" style="margin-bottom:8px;">Configure SMTP for authenticated relay (username/password) or unauthenticated relay (leave username blank).</div>
+        <form id="smtpForm">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+                <div>
+                    <label>Host</label><br/>
+                    <input type="text" id="smtpHost" placeholder="smtp.example.com" required />
+                </div>
+                <div>
+                    <label>Port</label><br/>
+                    <input type="number" id="smtpPort" min="1" value="25" required style="width:120px;" />
+                </div>
+                <div>
+                    <label>From Email</label><br/>
+                    <input type="email" id="smtpFromEmail" placeholder="noreply@domain.com" required />
+                </div>
+                <div>
+                    <label>From Name</label><br/>
+                    <input type="text" id="smtpFromName" placeholder="QuizAPI" />
+                </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; align-items:flex-end;">
+                <div>
+                    <label>Username (optional)</label><br/>
+                    <input type="text" id="smtpUsername" placeholder="smtp-user@domain.com" />
+                </div>
+                <div>
+                    <label>Password (optional)</label><br/>
+                    <input type="password" id="smtpPassword" placeholder="Leave blank to keep existing" />
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; margin-top:22px;">
+                    <label style="display:flex; gap:6px; align-items:center;"><input type="checkbox" id="smtpUseStartTls" /> Use STARTTLS</label>
+                    <label style="display:flex; gap:6px; align-items:center;"><input type="checkbox" id="smtpUseSsl" /> Use SSL</label>
+                </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; align-items:center;">
+                <button type="submit">Save SMTP</button>
+                <button type="button" id="smtpReloadBtn">Reload</button>
+                <input type="email" id="smtpTestTo" placeholder="Test email recipient" style="min-width:260px;" />
+                <button type="button" id="smtpTestBtn">Send Test</button>
+                <span class="muted" id="smtpStatus"></span>
+            </div>
+        </form>
+    </div>
+
+
+    <script>
+const loginForm = document.getElementById("loginForm");
+        const uploadForm = document.getElementById("uploadForm");
+        const logoutBtn = document.getElementById("logoutBtn");
+        const statusBox = document.getElementById("status");
+        const fileTable = document.getElementById("fileTable");
+        const fileList = document.getElementById("fileList");
+        const userManager = document.getElementById("userManager");   // only once
+        const smtpSettings = document.getElementById("smtpSettings");
+        const smtpHost = document.getElementById("smtpHost");
+        const smtpPort = document.getElementById("smtpPort");
+        const smtpFromEmail = document.getElementById("smtpFromEmail");
+        const smtpFromName = document.getElementById("smtpFromName");
+        const smtpUsername = document.getElementById("smtpUsername");
+        const smtpPassword = document.getElementById("smtpPassword");
+        const smtpUseStartTls = document.getElementById("smtpUseStartTls");
+        const smtpUseSsl = document.getElementById("smtpUseSsl");
+        const smtpReloadBtn = document.getElementById("smtpReloadBtn");
+        const smtpTestTo = document.getElementById("smtpTestTo");
+        const smtpTestBtn = document.getElementById("smtpTestBtn");
+        const smtpStatus = document.getElementById("smtpStatus");
+        const smtpForm = document.getElementById("smtpForm");
+        const userList = document.getElementById("userList");
+
+        let token = localStorage.getItem("jwtToken");
+
+        function escapeHtml(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function escapeHtmlAttr(str) {
+            // Same as escapeHtml, but ensure it's safe inside attributes
+            return escapeHtml(str).replace(/`/g, "&#96;");
+        }
+
+
+        // Rehydrate session
+        if (token) {
+            loginForm.style.display = "none";
+            uploadForm.style.display = "block";
+            fileTable.style.display = "block";
+            userManager.style.display = "block";
+            smtpSettings.style.display = "block";
+            loadFiles();
+            loadUsers();
+            loadSmtpSettings();
+            loadQuizzes();
+            loadImportHistory();
+            statusBox.textContent = "Logged in as Admin.";
+        }
+
+        // Login
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            statusBox.textContent = "Logging in...";
+
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({ email, password })
+                });
+
+                if (!res.ok) {
+                    statusBox.textContent = "Login failed. Check credentials.";
+                    return;
+                }
+
+                const data = await res.json();
+                token = data.token;
+                localStorage.setItem("jwtToken", token);
+
+                statusBox.textContent = "Login successful.";
+                loginForm.style.display = "none";
+                uploadForm.style.display = "block";
+                fileTable.style.display = "block";
+                userManager.style.display = "block";
+                smtpSettings.style.display = "block";
+                loadFiles();
+                loadSmtpSettings();
+                loadUsers();
+                loadQuizzes();
+                loadImportHistory();
+            } catch (err) {
+                statusBox.textContent = "Error: " + err.message;
+            }
+        });
+
+        // Upload
+        uploadForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const file = document.getElementById("fileInput").files[0];
+            if (!file) return alert("Select a file first!");
+
+            statusBox.textContent = "Uploading " + file.name + "...";
+
+            const formData = new FormData();
+            formData.append("File", file);
+
+            try {
+                const res = await fetch("/api/import/upload", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` },
+                    body: formData
+                });
+
+                const text = await res.text();
+                if (res.ok) {
+                    statusBox.textContent = "OK Upload successful:\n" + text;
+                    loadFiles();
+                } else {
+                    statusBox.textContent = "ERROR Upload failed (" + res.status + "): " + text;
+                }
+            } catch (err) {
+                statusBox.textContent = "Error: " + err.message;
+            }
+        });
+
+        // Load files
+        async function loadFiles() {
+            try {
+                const res = await fetch("/api/files", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const files = await res.json();
+                fileList.innerHTML = "";
+                if (!files.length) {
+                    fileList.innerHTML = `<tr><td colspan="4"><i>No files uploaded yet.</i></td></tr>`;
+                    return;
+                }
+                for (const f of files) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                <td>${f.FileName}</td>
+                <td>${f.SizeKb}</td>
+                <td>${new Date(f.UploadedUtc).toLocaleString()}</td>
+                <td>
+                  <button onclick="processFile('${f.FileName}')">Import</button>
+                  <button class="danger" onclick="deleteFile('${f.FileName}')">Delete</button>
+                </td>
+              `;
+                    fileList.appendChild(row);
+                }
+            } catch (err) {
+                fileList.innerHTML = `<tr><td colspan="4">Error loading files.</td></tr>`;
+                console.error(err);
+            }
+        }
+
+        // Import to DB
+        async function processFile(name) {
+            if (!confirm(`Import ${name} into database?`)) return;
+            statusBox.textContent = `Importing ${name}...`;
+            const res = await fetch(`/api/import/process/${encodeURIComponent(name)}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const text = await res.text();
+            if (res.ok) {
+                statusBox.textContent = "OK Imported successfully:\n" + text;
+            } else {
+                statusBox.textContent = "ERROR Import failed (" + res.status + "): " + text;
+            }
+        }
+
+        // Delete
+        async function deleteFile(name) {
+            if (!confirm(`Delete ${name}?`)) return;
+            statusBox.textContent = `Deleting ${name}...`;
+            const res = await fetch(`/api/files/${encodeURIComponent(name)}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const text = await res.text();
+            if (res.ok) {
+                statusBox.textContent = "🗑 Deleted: " + text;
+                loadFiles();
+            } else {
+                statusBox.textContent = "ERROR Delete failed (" + res.status + "): " + text;
+            }
+        }
+
+        // User management
+        async function loadUsers() {
+            try {
+                const res = await fetch("/api/users", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (!res.ok) return;
+                const users = await res.json();
+                userList.innerHTML = "";
+                for (const u of users) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                <td>${u.email}</td>
+                <td>${u.role ?? "(unknown)"}</td>
+                <td>
+                  <button onclick="makeAdmin('${u.email}')">Make Admin</button>
+                  <button onclick="makeUser('${u.email}')">Make User</button>
+                  <button onclick="resetPasswordPrompt('${u.email}')">Reset Password</button>
+                  <button class="danger" onclick="deleteUser('${u.email}')">Delete</button>
+                </td>
+              `;
+                    userList.appendChild(row);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+
+        // SMTP settings
+        async function loadSmtpSettings() {
+            if (!token) return;
+            try {
+                smtpStatus.textContent = 'Loading...';
+                const res = await fetch('/api/admin/smtp', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    const t = await res.text();
+                    smtpStatus.textContent = 'Failed to load SMTP: ' + t;
+                    return;
+                }
+                const s = await res.json();
+                smtpHost.value = s.host ?? '';
+                smtpPort.value = s.port ?? 25;
+                smtpFromEmail.value = s.fromEmail ?? '';
+                smtpFromName.value = s.fromName ?? '';
+                smtpUsername.value = s.username ?? '';
+                smtpPassword.value = ''; // never fill password field
+                smtpUseStartTls.checked = !!s.useStartTls;
+                smtpUseSsl.checked = !!s.useSsl;
+                smtpStatus.textContent = s.passwordSet ? 'Loaded. Password is set.' : 'Loaded. Password is not set.';
+            } catch (err) {
+                console.error(err);
+                smtpStatus.textContent = 'Error loading SMTP (see console).';
+            }
+        }
+
+        async function saveSmtpSettings() {
+            if (!token) return;
+            try {
+                smtpStatus.textContent = 'Saving...';
+                const payload = {
+                    host: smtpHost.value.trim(),
+                    port: parseInt(smtpPort.value || '25', 10),
+                    useStartTls: !!smtpUseStartTls.checked,
+                    useSsl: !!smtpUseSsl.checked,
+                    username: smtpUsername.value.trim(),
+                    password: smtpPassword.value,
+                    keepExistingPasswordWhenBlank: true,
+                    fromEmail: smtpFromEmail.value.trim(),
+                    fromName: smtpFromName.value.trim() || 'QuizAPI'
+                };
+                const res = await fetch('/api/admin/smtp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const t = await res.text();
+                    smtpStatus.textContent = 'Save failed: ' + t;
+                    return;
+                }
+                smtpPassword.value = '';
+                smtpStatus.textContent = 'Saved.';
+                await loadSmtpSettings();
+            } catch (err) {
+                console.error(err);
+                smtpStatus.textContent = 'Error saving SMTP (see console).';
+            }
+        }
+
+        async function testSmtp() {
+            if (!token) return;
+            const to = (smtpTestTo.value || '').trim();
+            if (!to) {
+                smtpStatus.textContent = 'Enter a test recipient email.';
+                return;
+            }
+            try {
+                smtpStatus.textContent = 'Sending test...';
+                const res = await fetch('/api/admin/smtp/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ toEmail: to })
+                });
+                if (!res.ok) {
+                    const t = await res.text();
+                    smtpStatus.textContent = 'Test failed: ' + t;
+                    return;
+                }
+                smtpStatus.textContent = 'Test email sent.';
+            } catch (err) {
+                console.error(err);
+                smtpStatus.textContent = 'Error sending test (see console).';
+            }
+        }
+        // SMTP form wiring
+        if (smtpForm) {
+            smtpForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveSmtpSettings();
+            });
+        }
+        if (smtpReloadBtn) smtpReloadBtn.addEventListener('click', loadSmtpSettings);
+        if (smtpTestBtn) smtpTestBtn.addEventListener('click', testSmtp);
+
+        document.getElementById("createUserForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("newUserEmail").value;
+            const password = document.getElementById("newUserPassword").value;
+            const role = document.getElementById("newUserRole").value;
+            const res = await fetch("/api/users", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ email, password, role })
+            });
+
+        
+
+            const text = await res.text();
+            if (res.ok) {
+                statusBox.textContent = "OK " + text;
+                loadUsers();
+            } else {
+                statusBox.textContent = "ERROR " + text;
+            }
+        });
+
+        async function makeAdmin(email) { await updateRole(email, "Admin"); }
+        async function makeUser(email) { await updateRole(email, "User"); }
+
+        async function updateRole(email, role) {
+            const res = await fetch(`/api/users/${encodeURIComponent(email)}/role`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ role })
+            });
+            const text = await res.text();
+            if (res.ok) { statusBox.textContent = "OK " + text; loadUsers(); }
+            else { statusBox.textContent = "ERROR " + text; }
+        }
+
+        async function resetPasswordPrompt(email) {
+            const newPassword = prompt(`Enter a new password for ${email}:`);
+            if (!newPassword) return;
+
+            const res = await fetch(`/api/users/${encodeURIComponent(email)}/reset-password`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ newPassword })
+            });
+
+            const text = await res.text();
+            if (res.ok) {
+                statusBox.textContent = "OK " + text;
+            } else {
+                statusBox.textContent = "ERROR " + text;
+            }
+        }
+
+        async function deleteUser(email) {
+            if (!confirm(`Delete ${email}?`)) return;
+            const res = await fetch(`/api/users/${encodeURIComponent(email)}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const text = await res.text();
+            if (res.ok) { statusBox.textContent = "🗑 " + text; loadUsers(); }
+            else { statusBox.textContent = "ERROR " + text; }
+        }
+
+        // Logout
+        logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("jwtToken");
+            token = null;
+            loginForm.style.display = "block";
+            uploadForm.style.display = "none";
+            fileTable.style.display = "none";
+            userManager.style.display = "none";
+            smtpSettings.style.display = "none";
+            userList.innerHTML = "";
+            statusBox.textContent = "Logged out.";
+        });
+    
+
+        // --- Admin Dashboard: Quizzes + Import History (CSV is source of truth) ---
+function getDashboardEls() {
+    return {
+        refreshQuizzesBtn: document.getElementById("refreshQuizzesBtn"),
+        quizCategoryFilter: document.getElementById("quizCategoryFilter"),
+        quizStatus: document.getElementById("quizStatus"),
+        quizTbody: document.getElementById("quizTbody"),
+        refreshHistoryBtn: document.getElementById("refreshHistoryBtn"),
+        historyStatus: document.getElementById("historyStatus"),
+        historyTbody: document.getElementById("historyTbody")
+    };
+}
+
+function formatUtc(dtString) {
+    if (!dtString) return "";
+    try {
+        const d = new Date(dtString);
+        if (isNaN(d.getTime())) return dtString;
+        return d.toISOString().replace("T", " ").replace("Z", " UTC");
+    } catch {
+        return dtString;
+    }
+}
+
+async function loadQuizCategories() {
+    const els = getDashboardEls();
+    if (!els.quizCategoryFilter) return;
+
+    els.quizCategoryFilter.innerHTML = '<option value="All">All</option>';
+
+    try {
+        const res = await fetch("/api/categories", {
+            headers: token ? { "Authorization": "Bearer " + token } : {}
+        });
+
+        if (!res.ok) return;
+
+        const cats = await res.json();
+        if (!Array.isArray(cats)) return;
+
+        for (const c of cats) {
+            if (!c || typeof c !== "string") continue;
+            const val = c;
+            if (val.toLowerCase() === "all") continue;
+
+            const opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = val;
+            els.quizCategoryFilter.appendChild(opt);
+        }
+    } catch { }
+}
+
+async function loadQuizzes() {
+    const { quizStatus, quizTbody } = getDashboardEls();
+    if (!quizStatus || !quizTbody) return;
+
+    if (!token) {
+        quizStatus.textContent = "Login required.";
+        return;
+    }
+
+    quizStatus.textContent = "Loading quizzes...";
+    quizTbody.innerHTML = "";
+
+    try {
+        const cat = (document.getElementById("quizCategoryFilter")?.value) || "All";
+        const url = cat && cat !== "All" ? ("/api/quiz?category=" + encodeURIComponent(cat)) : "/api/quiz";
+
+        const res = await fetch(url, {
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!res.ok) {
+            quizStatus.textContent = "Failed to load quizzes: " + res.status;
+            return;
+        }
+
+        const quizzes = await res.json();
+
+        if (!Array.isArray(quizzes) || quizzes.length === 0) {
+            quizStatus.textContent = "No quizzes found in database.";
+            return;
+        }
+
+        quizStatus.textContent = "Loaded " + quizzes.length + " quiz(es).";
+
+        for (const q of quizzes) {
+            const id = q.Id || q.id || "";
+            const title = q.Title || q.title || "(untitled)";
+            const category = q.Category || q.category || "Uncategorized";
+            const created = q.CreatedUtc || q.createdUtc;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(title)}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(category)}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee; font-family:monospace;">${escapeHtml(id)}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(formatUtc(created))}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee; white-space:nowrap;">
+                    <button type="button" data-action="copy" data-id="${escapeHtmlAttr(id)}">Copy ID</button>
+                    <button type="button" data-action="open" data-id="${escapeHtmlAttr(id)}">Open runner</button>
+                    <button type="button" data-action="delete" data-id="${escapeHtmlAttr(id)}">Delete</button>
+                </td>
+            `;
+            quizTbody.appendChild(tr);
+        }
+    } catch (err) {
+        quizStatus.textContent = "Error loading quizzes: " + err.message;
+    }
+}
+
+async function loadImportHistory() {
+    const { historyStatus, historyTbody } = getDashboardEls();
+    if (!historyStatus || !historyTbody) return;
+
+    if (!token) {
+        historyStatus.textContent = "Login required.";
+        return;
+    }
+
+    historyStatus.textContent = "Loading import history...";
+    historyTbody.innerHTML = "";
+
+    try {
+        const res = await fetch("/api/import/history?take=50", {
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!res.ok) {
+            historyStatus.textContent = "Failed to load import history: " + res.status;
+            return;
+        }
+
+        const runs = await res.json();
+
+        if (!Array.isArray(runs) || runs.length === 0) {
+            historyStatus.textContent = "No import history yet.";
+            return;
+        }
+
+        historyStatus.textContent = "Loaded " + runs.length + " run(s).";
+
+        for (const r of runs) {
+            const imported = r.ImportedUtc || r.importedUtc;
+            const file = r.FileName || r.fileName || "";
+            const status = r.Status || r.status || "";
+            const message = r.Message || r.message || "";
+            const rows = (r.Rows ?? r.rows ?? "");
+            const quizzes = (r.Quizzes ?? r.quizzes ?? "");
+            const questions = (r.Questions ?? r.questions ?? "");
+            const answers = (r.Answers ?? r.answers ?? "");
+
+            const counts = `rows=${rows}, quizzes=${quizzes}, questions=${questions}, answers=${answers}`;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(formatUtc(imported))}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(file)}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(status)}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee; font-family:monospace;">${escapeHtml(counts)}</td>
+                <td style="padding:6px; border-bottom:1px solid #eee;">${escapeHtml(message)}</td>
+            `;
+            historyTbody.appendChild(tr);
+        }
+    } catch (err) {
+        historyStatus.textContent = "Error loading import history: " + err.message;
+    }
+}
+
+function wireDashboardButtonsOnce() {
+    const { refreshQuizzesBtn, refreshHistoryBtn, quizTbody } = getDashboardEls();
+
+    if (refreshQuizzesBtn && !refreshQuizzesBtn.dataset.wired) {
+        refreshQuizzesBtn.dataset.wired = "1";
+        refreshQuizzesBtn.addEventListener("click", () => loadQuizzes());
+    }
+
+    if (refreshHistoryBtn && !refreshHistoryBtn.dataset.wired) {
+        refreshHistoryBtn.dataset.wired = "1";
+        refreshHistoryBtn.addEventListener("click", () => loadImportHistory());
+    }
+
+    if (quizTbody && !quizTbody.dataset.wired) {
+        quizTbody.dataset.wired = "1";
+        quizTbody.addEventListener("click", async (e) => {
+            const btn = e.target.closest("button");
+            if (!btn) return;
+
+            const action = btn.getAttribute("data-action");
+            const id = btn.getAttribute("data-id");
+            if (!action || !id) return;
+
+            const { quizStatus } = getDashboardEls();
+
+            if (action === "copy") {
+                try {
+                    await navigator.clipboard.writeText(id);
+                    if (quizStatus) quizStatus.textContent = "Copied quiz ID: " + id;
+                } catch {
+                    const tmp = document.createElement("textarea");
+                    tmp.value = id;
+                    document.body.appendChild(tmp);
+                    tmp.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(tmp);
+                    if (quizStatus) quizStatus.textContent = "Copied quiz ID: " + id;
+                }
+                return;
+            }
+
+            if (action === "open") {
+                window.open("/quiz.html?quizId=" + encodeURIComponent(id), "_blank");
+                return;
+            }
+
+            if (action === "delete") {
+                const confirmText = prompt("Type DELETE to permanently delete this quiz (then re-import from CSV):");
+                if (confirmText !== "DELETE") return;
+
+                if (quizStatus) quizStatus.textContent = "Deleting quiz...";
+
+                try {
+                    const res = await fetch("/api/quiz/" + encodeURIComponent(id), {
+                        method: "DELETE",
+                        headers: { "Authorization": "Bearer " + token }
+                    });
+
+                    if (!res.ok) {
+                        const msg = await res.text().catch(() => "");
+                        if (quizStatus) quizStatus.textContent = "Delete failed: " + res.status + (msg ? (" - " + msg) : "");
+                        return;
+                    }
+
+                    if (quizStatus) quizStatus.textContent = "Deleted quiz " + id;
+                    await loadQuizzes();
+                } catch (err) {
+                    if (quizStatus) quizStatus.textContent = "Error deleting quiz: " + err.message;
+                }
+            }
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    wireDashboardButtonsOnce();
+
+    const saved = localStorage.getItem("jwtToken");
+    if (saved) {
+        token = saved;
+        loginForm.style.display = "none";
+        uploadForm.style.display = "block";
+        fileTable.style.display = "block";
+        userManager.style.display = "block";
+
+        loadFiles();
+        loadUsers();
+        loadQuizCategories();
+        loadQuizzes();
+        loadImportHistory();
+    }
+});
+
+	</script>
+
+
+<hr />
+<h2>Quizzes</h2>
+<p class="muted">CSV is the source of truth. Use this list to copy Quiz IDs, open the runner, or delete a quiz (then re-import if needed).</p>
+<div id="quizSection">
+    <button id="refreshQuizzesBtn" type="button">Refresh quizzes</button>
+    <label for="quizCategoryFilter" style="margin-left:12px;">Category:</label>
+    <select id="quizCategoryFilter" style="margin-left:6px;">
+        <option value="All">All</option>
+    </select>
+
+    <div id="quizStatus" class="status"></div>
+    <table id="quizTable" style="width:100%; border-collapse:collapse; margin-top:0.75rem;">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Title</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Quiz ID</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Created (UTC)</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="quizTbody"></tbody>
+    </table>
+</div>
+
+<hr />
+<h2>Import History</h2>
+<div id="historySection">
+    <button id="refreshHistoryBtn" type="button">Refresh history</button>
+    <div id="historyStatus" class="status"></div>
+    <table id="historyTable" style="width:100%; border-collapse:collapse; margin-top:0.75rem;">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Imported (UTC)</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">File</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Status</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Counts</th>
+                <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Message</th>
+            </tr>
+        </thead>
+        <tbody id="historyTbody"></tbody>
+    </table>
+</div>
+</body>
+</html>

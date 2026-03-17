@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuizAPI Auth Test</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f4f7fb;
+            --panel: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --accent: #1d4ed8;
+            --accent-hover: #1e40af;
+            --border: #d1d5db;
+            --error: #b91c1c;
+            --success: #166534;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+            color: var(--text);
+        }
+
+        .card {
+            width: min(420px, calc(100vw - 2rem));
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        h1 {
+            margin: 0 0 0.5rem;
+            font-size: 1.6rem;
+        }
+
+        p {
+            margin: 0 0 1.25rem;
+            color: var(--muted);
+        }
+
+        label {
+            display: block;
+            margin: 0.85rem 0 0.35rem;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.8rem 0.9rem;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: 2px solid rgba(29, 78, 216, 0.2);
+            border-color: var(--accent);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 1rem;
+            border: 0;
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            background: var(--accent);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+        }
+
+        pre {
+            margin: 1rem 0 0;
+            padding: 0.9rem;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.92rem;
+        }
+
+        .success { color: var(--success); }
+        .error { color: var(--error); }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <h1>Auth Test</h1>
+        <p>Use this page to test <code>POST /api/auth/login</code> with your development credentials.</p>
+
+        <form id="loginForm">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" value="admin@quizapi.local" autocomplete="username" required />
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" value="Admin@123" autocomplete="current-password" required />
+
+            <button type="submit">Login</button>
+        </form>
+
+        <pre id="result">Ready.</pre>
+    </main>
+
+    <script>
+        const form = document.getElementById("loginForm");
+        const result = document.getElementById("result");
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            result.className = "";
+            result.textContent = "Sending request...";
+
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({ email, password })
+                });
+
+                const text = await response.text();
+
+                if (!response.ok) {
+                    result.className = "error";
+                    result.textContent = "Login failed (" + response.status + ")\n" + text;
+                    return;
+                }
+
+                result.className = "success";
+                result.textContent = "Login successful\n" + text;
+            } catch (error) {
+                result.className = "error";
+                result.textContent = "Request error\n" + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
