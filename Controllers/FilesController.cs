@@ -18,7 +18,7 @@ namespace QuizAPI.Controllers
         [HttpGet]
         public IActionResult GetFiles()
         {
-            var uploadsRoot = GetPublicUploadsRoot();
+            var uploadsRoot = GetPrivateUploadsRoot();
             if (!Directory.Exists(uploadsRoot))
                 return Ok(new List<object>());
 
@@ -28,7 +28,7 @@ namespace QuizAPI.Controllers
                     FileName = Path.GetFileName(path),
                     SizeKb = new FileInfo(path).Length / 1024,
                     UploadedUtc = System.IO.File.GetCreationTimeUtc(path),
-                    Url = $"/uploads/{Path.GetFileName(path)}"
+                    Url = string.Empty
                 })
                 .OrderByDescending(f => f.UploadedUtc)
                 .ToList();
@@ -42,7 +42,7 @@ namespace QuizAPI.Controllers
             if (string.IsNullOrWhiteSpace(fileName))
                 return BadRequest("File name is required.");
 
-            var uploadsRoot = GetPublicUploadsRoot();
+            var uploadsRoot = GetPrivateUploadsRoot();
             var filePath = GetSafeChildPath(uploadsRoot, fileName);
             if (filePath == null)
                 return BadRequest("Invalid file name.");
@@ -54,9 +54,9 @@ namespace QuizAPI.Controllers
             return Ok($"Deleted {fileName}");
         }
 
-        private string GetPublicUploadsRoot()
+        private string GetPrivateUploadsRoot()
         {
-            return Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads");
+            return Path.Combine(_env.ContentRootPath, "App_Data", "uploads");
         }
 
         private static string? GetSafeChildPath(string root, string fileName)
