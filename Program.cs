@@ -209,12 +209,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Quiz API v1");
-        c.RoutePrefix = string.Empty;
+        c.RoutePrefix = "swapi.html";
     });
 }
 
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicyName);
+app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
