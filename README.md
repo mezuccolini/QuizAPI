@@ -173,6 +173,27 @@ Startup will now fail fast if required production configuration is missing.
 dotnet build
 ```
 
+## Release Workflow
+
+- [CHANGELOG.md](D:\Quiz_Application\DevQuizAPI\CHANGELOG.md): release history
+- [v0.1.0-alpha release notes](D:\Quiz_Application\DevQuizAPI\docs\releases\v0.1.0-alpha.md)
+- [release plan](D:\Quiz_Application\DevQuizAPI\docs\release-plan.md): criteria for `v0.2.0-beta`
+- [DEPLOYMENT.md](D:\Quiz_Application\DevQuizAPI\DEPLOYMENT.md): production deployment guide
+
+## Health Check
+
+- `GET /health`: lightweight application health endpoint for deployment checks and monitoring
+
+## CI
+
+GitHub Actions CI is configured at [ci.yml](D:\Quiz_Application\DevQuizAPI\.github\workflows\ci.yml).
+
+The workflow:
+
+- restores dependencies
+- builds the solution
+- runs the integration test suite
+
 ## Git
 
 This project is tracked in Git and uses [main](D:\Quiz_Application\DevQuizAPI) as the default branch.

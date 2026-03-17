@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using QuizAPI.Data;
@@ -15,8 +16,24 @@ namespace QuizAPI.Tests;
 public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly string _databaseName = $"QuizApiTests_{Guid.NewGuid():N}";
-    private string ConnectionString =>
-        $"Server=.\\SQLEXPRESS;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+    private string ConnectionString
+    {
+        get
+        {
+            var baseConnection = Environment.GetEnvironmentVariable("TEST_SQLSERVER_BASE_CONNECTION");
+            if (string.IsNullOrWhiteSpace(baseConnection))
+            {
+                return $"Server=.\\SQLEXPRESS;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+            }
+
+            var builder = new SqlConnectionStringBuilder(baseConnection)
+            {
+                InitialCatalog = _databaseName
+            };
+
+            return builder.ConnectionString;
+        }
+    }
 
     public QuizApiWebApplicationFactory()
     {
