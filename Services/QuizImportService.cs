@@ -356,6 +356,8 @@ namespace QuizAPI.Services
                     .ToList();
 
                 var grouped = rows.GroupBy(r => new { Title = r.QuizTitle, Category = NormalizeCategory(r.Category) });
+                var packageId = TryGetPackageIdFromImportedFile(fileName);
+                var packageImagesDir = GetPackageImagesDirectory(packageId);
 
                 int quizCount = 0, questionCount = 0, answerCount = 0;
 
@@ -385,11 +387,11 @@ namespace QuizAPI.Services
 
                     int orderIndex = 0;
                     foreach (var qGroup in questions)
-                    {
-                        var question = new Models.Question
                         {
-                            Quiz = quiz,
-                            Text = qGroup.Key,
+                            var question = new Models.Question
+                            {
+                                Quiz = quiz,
+                                Text = qGroup.Key,
                             OrderIndex = orderIndex++,
                             AllowMultiple = qGroup.Count(r => r.IsCorrect) > 1
                         };
@@ -408,6 +410,27 @@ namespace QuizAPI.Services
                             };
                             _db.Answers.Add(answer);
                             answerCount++;
+                        }
+
+                        var questionImageKeys = qGroup
+                            .Select(r => r.QuestionImgKey)
+                            .Where(v => !string.IsNullOrWhiteSpace(v))
+                            .SelectMany(SplitImageKeys)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList();
+
+                        foreach (var imageKey in questionImageKeys)
+                        {
+                            foreach (var imageFile in ResolveImageFiles(packageImagesDir, imageKey))
+                            {
+                                _db.Images.Add(new Models.Image
+                                {
+                                    QuestionId = question.Id,
+                                    FileName = imageFile,
+                                    ContentType = GetContentType(imageFile),
+                                    Url = BuildImageUrl(packageId, imageFile)
+                                });
+                            }
                         }
                     }
                 }
@@ -452,6 +475,80 @@ namespace QuizAPI.Services
         private string GetPublicUploadsRoot()
         {
             return Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads");
+        }
+
+        private string? GetPackageImagesDirectory(string? packageId)
+        {
+            if (string.IsNullOrWhiteSpace(packageId))
+                return null;
+
+            var path = Path.Combine(GetPublicUploadsRoot(), "images", packageId);
+            return Directory.Exists(path) ? path : null;
+        }
+
+        private static string? TryGetPackageIdFromImportedFile(string fileName)
+        {
+            var normalized = Path.GetFileName(fileName);
+            var underscore = normalized.IndexOf('_');
+            if (underscore <= 0)
+                return null;
+
+            return normalized[..underscore];
+        }
+
+        private static IEnumerable<string> SplitImageKeys(string value)
+        {
+            return (value ?? string.Empty)
+                .Split(new[] { '|', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(v => !string.IsNullOrWhiteSpace(v));
+        }
+
+        private static IEnumerable<string> ResolveImageFiles(string? packageImagesDir, string imageKey)
+        {
+            if (string.IsNullOrWhiteSpace(packageImagesDir) || string.IsNullOrWhiteSpace(imageKey))
+                return Array.Empty<string>();
+
+            var allFiles = Directory.GetFiles(packageImagesDir)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Cast<string>()
+                .ToList();
+
+            var exactMatches = allFiles
+                .Where(name => string.Equals(name, imageKey, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (exactMatches.Count > 0)
+                return exactMatches;
+
+            var requestedStem = Path.GetFileNameWithoutExtension(imageKey);
+            return allFiles
+                .Where(name => string.Equals(Path.GetFileNameWithoutExtension(name), requestedStem, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string BuildImageUrl(string? packageId, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(packageId))
+                return $"/uploads/{fileName}";
+
+            return $"/uploads/images/{packageId}/{Uri.EscapeDataString(fileName)}";
+        }
+
+        private static string GetContentType(string fileName)
+        {
+            return Path.GetExtension(fileName).ToLowerInvariant() switch
+            {
+                ".png" => "image/png",
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                ".svg" => "image/svg+xml",
+                _ => "application/octet-stream"
+            };
         }
 
         private static string? GetSafeChildPath(string root, string fileName)

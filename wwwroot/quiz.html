@@ -314,7 +314,8 @@
                             text: a.Text ?? a.text
                         })),
                         images: imagesRaw.map(i => ({
-                            fileName: i.FileName ?? i.fileName
+                            fileName: i.FileName ?? i.fileName,
+                            url: i.Url ?? i.url
                         }))
                     };
                 })
@@ -388,7 +389,7 @@
 
             const images = (q.images || []);
             const imgHtml = images.length
-                ? `<div class="imggrid">${images.map(i => `<img alt="Question image" src="/uploads/${encodeURIComponent(i.fileName)}" />`).join('')}</div>`
+                ? `<div class="imggrid">${images.map(i => `<img alt="Question image" src="${escapeHtml(i.url || `/uploads/${i.fileName}`)}" />`).join('')}</div>`
                 : '';
 
             const answersHtml = (q.answers || []).map(a => {

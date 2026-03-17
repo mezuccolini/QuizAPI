@@ -40,7 +40,13 @@ namespace QuizAPI.Services
                         .Select(a => new AnswerDto { AnswerId = a.Id, Text = a.Text })
                         .ToList(),
                     Images = q.Images
-                        .Select(i => new ImageDto { ImageId = i.Id, FileName = i.FileName, ContentType = i.ContentType })
+                        .Select(i => new ImageDto
+                        {
+                            ImageId = i.Id,
+                            FileName = i.FileName,
+                            ContentType = i.ContentType,
+                            Url = i.Url
+                        })
                         .ToList()
                 }).ToList()
             };
