@@ -2,7 +2,7 @@
 
 `DevQuizAPI` is a .NET 9 quiz platform for building, importing, managing, and taking quizzes through both API endpoints and simple browser-based pages.
 
-It is the active source-of-truth application in this workspace.
+This repository is the active source-of-truth application for the project.
 
 ## What It Does
 
@@ -25,14 +25,14 @@ It is the active source-of-truth application in this workspace.
 
 ## Project Structure
 
-- [Program.cs](D:\Quiz_Application\DevQuizAPI\Program.cs): app startup, auth, CORS, Swagger, migrations, dev seeding
-- [Controllers](D:\Quiz_Application\DevQuizAPI\Controllers): API endpoints
-- [Data](D:\Quiz_Application\DevQuizAPI\Data): EF Core `DbContext`
-- [Models](D:\Quiz_Application\DevQuizAPI\Models): entities
-- [DTO](D:\Quiz_Application\DevQuizAPI\DTO): request/response models
-- [Services](D:\Quiz_Application\DevQuizAPI\Services): quiz import, query, SMTP, sample data seeding
-- [Migrations](D:\Quiz_Application\DevQuizAPI\Migrations): database schema history
-- [wwwroot](D:\Quiz_Application\DevQuizAPI\wwwroot): static browser pages
+- [Program.cs](Program.cs): app startup, auth, CORS, Swagger, migrations, dev seeding
+- [Controllers](Controllers): API endpoints
+- [Data](Data): EF Core `DbContext`
+- [Models](Models): entities
+- [DTO](DTO): request/response models
+- [Services](Services): quiz import, query, SMTP, sample data seeding
+- [Migrations](Migrations): database schema history
+- [wwwroot](wwwroot): static browser pages
 
 ## Local Development
 
@@ -43,7 +43,7 @@ It is the active source-of-truth application in this workspace.
 
 ### Default Development Configuration
 
-Development settings live in [appsettings.Development.json](D:\Quiz_Application\DevQuizAPI\appsettings.Development.json).
+Development settings live in [appsettings.Development.json](appsettings.Development.json).
 
 By default, development uses:
 
@@ -91,9 +91,9 @@ Sample data behavior:
 
 ## Sample Import Package
 
-A public sample quiz package is included in [samples](D:\Quiz_Application\DevQuizAPI\samples):
+A public sample quiz package is included in [samples](samples):
 
-- [sample-quiz-package-1V0-21.20.zip](D:\Quiz_Application\DevQuizAPI\samples\sample-quiz-package-1V0-21.20.zip)
+- [sample-quiz-package-1V0-21.20.zip](samples/sample-quiz-package-1V0-21.20.zip)
 
 This package is intended as a demo/template import example and includes:
 
@@ -103,15 +103,15 @@ This package is intended as a demo/template import example and includes:
 
 Typical usage:
 
-1. Open [upload.html](D:\Quiz_Application\DevQuizAPI\wwwroot\upload.html)
+1. Open [upload.html](wwwroot/upload.html)
 2. Log in as an admin
 3. Upload the ZIP package
 4. Import the extracted CSV file shown by the upload result
-5. Open [quiz.html](D:\Quiz_Application\DevQuizAPI\wwwroot\quiz.html) and take the imported quiz
+5. Open [quiz.html](wwwroot/quiz.html) and take the imported quiz
 
 ## Import Format
 
-Detailed import guidance lives in [import-format.md](D:\Quiz_Application\DevQuizAPI\docs\import-format.md).
+Detailed import guidance lives in [import-format.md](docs/import-format.md).
 
 Quick summary:
 
@@ -122,16 +122,16 @@ Quick summary:
 
 ## Browser Entry Points
 
-- [index.html](D:\Quiz_Application\DevQuizAPI\wwwroot\index.html): simple auth/login test page
-- [upload.html](D:\Quiz_Application\DevQuizAPI\wwwroot\upload.html): admin dashboard for login, file upload, imports, user management, SMTP settings
-- [quiz.html](D:\Quiz_Application\DevQuizAPI\wwwroot\quiz.html): quiz runner UI
+- [index.html](wwwroot/index.html): public landing page for the application
+- [upload.html](wwwroot/upload.html): admin dashboard for login, file upload, imports, user management, SMTP settings
+- [quiz.html](wwwroot/quiz.html): quiz runner UI
 
-In development, Swagger is available at [swapi.html](D:\Quiz_Application\DevQuizAPI\wwwroot\swapi.html).
+In development, Swagger is available at `/swapi.html`.
 
 ## Main API Areas
 
 - `POST /api/auth/login`
-- `POST /api/auth/register`
+- `POST /api/auth/register` admin-only user creation endpoint
 - `GET /api/categories`
 - `GET /api/quiz`
 - `GET /api/quiz/{quizId}/random`
@@ -164,7 +164,7 @@ For production-like deployments, prefer environment variables or secret storage 
 - SMTP credentials
 - connection strings
 
-The checked-in [appsettings.json](D:\Quiz_Application\DevQuizAPI\appsettings.json) intentionally does not contain a usable production database connection string or JWT signing key.
+The checked-in [appsettings.json](appsettings.json) intentionally does not contain a usable production database connection string or JWT signing key.
 
 Recommended production environment variables:
 
@@ -186,11 +186,12 @@ dotnet build
 
 ## Release Workflow
 
-- [CHANGELOG.md](D:\Quiz_Application\DevQuizAPI\CHANGELOG.md): release history
-- [v0.1.0-alpha release notes](D:\Quiz_Application\DevQuizAPI\docs\releases\v0.1.0-alpha.md)
-- [release plan](D:\Quiz_Application\DevQuizAPI\docs\release-plan.md): criteria for `v0.2.0-beta`
-- [release checklist](D:\Quiz_Application\DevQuizAPI\docs\release-checklist.md): pre-push and release verification steps
-- [DEPLOYMENT.md](D:\Quiz_Application\DevQuizAPI\DEPLOYMENT.md): production deployment guide
+- [CHANGELOG.md](CHANGELOG.md): release history
+- [v0.1.0-alpha release notes](docs/releases/v0.1.0-alpha.md)
+- [release plan](docs/release-plan.md): criteria for `v0.2.0-beta`
+- [release checklist](docs/release-checklist.md): pre-push and release verification steps
+- [DEPLOYMENT.md](DEPLOYMENT.md): production deployment guide
+- [FAQ.md](docs/FAQ.md): common setup and troubleshooting questions
 
 ## Health Check
 
@@ -198,7 +199,7 @@ dotnet build
 
 ## CI
 
-GitHub Actions CI is configured at [ci.yml](D:\Quiz_Application\DevQuizAPI\.github\workflows\ci.yml).
+GitHub Actions CI is configured at [ci.yml](.github/workflows/ci.yml).
 
 The workflow:
 
@@ -208,7 +209,7 @@ The workflow:
 
 ## Git
 
-This project is tracked in Git and uses [main](D:\Quiz_Application\DevQuizAPI) as the default branch.
+This project is tracked in Git and uses `main` as the default branch.
 
 Remote:
 
@@ -217,4 +218,5 @@ Remote:
 ## Notes
 
 - `DevQuizAPI` is the maintained application going forward.
-- The separate `QuizAPI` folder elsewhere in the workspace is treated as a different application.
+- A public sample quiz package is included for demo and onboarding purposes.
+- The repository is designed for local development, technical preview use, and continued hardening toward beta.
