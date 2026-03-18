@@ -364,6 +364,7 @@
                     <button id="btnNext">Next →</button>
                     <button id="btnRestart" disabled>Restart (re-randomize)</button>
                     <button id="btnSubmit">Submit</button>
+                    <button id="btnHome" disabled>Home</button>
                     <button id="btnNewQuiz" disabled>Select New Quiz</button>
                 </div>
             </div>
@@ -453,6 +454,7 @@
         const btnPrev = el('btnPrev');
         const btnNext = el('btnNext');
         const btnSubmit = el('btnSubmit');
+        const btnHome = el('btnHome');
         const resultText = el('resultText');
         const resultDetail = el('resultDetail');
         const perQuestion = el('perQuestion');
@@ -661,6 +663,7 @@
                 const pct = res.ScorePercent ?? res.scorePercent ?? 0;
                 const cc = res.CorrectCount ?? res.correctCount ?? 0;
                 const tq = res.TotalQuestions ?? res.totalQuestions ?? 0;
+                const passed = res.Passed ?? res.passed ?? false;
 
                 resultText.innerHTML = `Score: <strong>${pct}%</strong> — ${cc} / ${tq}`;
                 resultDetail.textContent = 'Per-question feedback below (without revealing the correct answers).';
@@ -691,6 +694,16 @@
                 perQuestion.innerHTML = blocks;
                 resultCard.style.display = 'block';
                 btnNewQuiz.disabled = false;
+                btnHome.disabled = false;
+                sessionStorage.setItem('latestQuizResult', JSON.stringify({
+                    quizId: currentQuizId,
+                    quizTitle: quizDto?.title || 'Quiz',
+                    scorePercent: pct,
+                    correctCount: cc,
+                    totalQuestions: tq,
+                    passed,
+                    submittedUtc: new Date().toISOString()
+                }));
                 setStatus('');
             } catch (e) {
                 setStatus('Submit failed. Check the API response and server logs.', 'error');
@@ -754,9 +767,13 @@
             // Reset buttons
             btnRestart.disabled = true;
             btnNewQuiz.disabled = true;
+            btnHome.disabled = true;
         });
 
         btnSubmit.addEventListener('click', submitQuiz);
+        btnHome.addEventListener('click', () => {
+            window.location.assign('/result-home.html');
+        });
 
         categorySelect.addEventListener('change', () => {
             refreshQuizListForCategory();

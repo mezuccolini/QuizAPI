@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Cert Master Result Home</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f5efe3;
+            --panel: rgba(255, 252, 247, 0.92);
+            --text: #182230;
+            --muted: #5f6c7d;
+            --accent: #0f3d57;
+            --accent-hover: #0b2d40;
+            --accent-soft: #dcebf3;
+            --border: rgba(24, 34, 48, 0.12);
+            --shadow: rgba(24, 34, 48, 0.12);
+            --success-bg: #ecfdf3;
+            --success-text: #166534;
+            --error-bg: #fef2f2;
+            --error-text: #991b1b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(197, 127, 23, 0.15), transparent 28%),
+                radial-gradient(circle at top right, rgba(15, 61, 87, 0.18), transparent 22%),
+                linear-gradient(180deg, #fdf7ea 0%, var(--bg) 52%, #f1eadc 100%);
+            color: var(--text);
+            padding: 1.2rem;
+        }
+
+        main {
+            width: min(920px, 100%);
+            margin: 0 auto;
+            padding: 2rem 0 3rem;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            box-shadow: 0 26px 54px var(--shadow);
+            padding: 1.6rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .eyebrow {
+            display: inline-block;
+            margin-bottom: 0.9rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1, h2 {
+            margin: 0 0 0.8rem;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        p {
+            color: var(--muted);
+            line-height: 1.75;
+        }
+
+        .result-card {
+            margin-top: 1.2rem;
+            padding: 1.25rem;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 251, 244, 0.95));
+            border: 1px solid rgba(24, 34, 48, 0.08);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+        }
+
+        .badge.pass {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge.fail {
+            background: var(--error-bg);
+            color: var(--error-text);
+            border: 1px solid #fecaca;
+        }
+
+        .stats {
+            display: flex;
+            gap: 0.9rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .stat {
+            min-width: 160px;
+            padding: 1rem;
+            border-radius: 18px;
+            border: 1px solid rgba(24, 34, 48, 0.08);
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat strong {
+            display: block;
+            color: var(--accent);
+            font-size: 1.45rem;
+            margin-top: 0.25rem;
+        }
+
+        .empty {
+            padding: 1.1rem;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.72);
+            border: 1px dashed rgba(24, 34, 48, 0.18);
+        }
+
+        .footer-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.6rem;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 220px;
+            padding: 0.95rem 1.2rem;
+            border-radius: 16px;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background: var(--accent-hover);
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section class="panel">
+            <div class="eyebrow">The Cert Master</div>
+            <h1>Quiz home</h1>
+            <p>Your most recent completed quiz result is shown below.</p>
+
+            <div id="resultHost"></div>
+
+            <div class="footer-actions">
+                <a class="button" href="/quiz.html">Select New Quiz</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const resultHost = document.getElementById('resultHost');
+
+        function escapeHtml(value) {
+            return (value ?? '')
+                .toString()
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function render() {
+            const raw = sessionStorage.getItem('latestQuizResult');
+            if (!raw) {
+                resultHost.innerHTML = `
+                    <div class="empty">
+                        <h2>No recent quiz result found</h2>
+                        <p>Complete a quiz first, then use the Home button after Submit to land here with your latest pass or fail result.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let result;
+            try {
+                result = JSON.parse(raw);
+            } catch {
+                resultHost.innerHTML = `
+                    <div class="empty">
+                        <h2>Recent result unavailable</h2>
+                        <p>The saved quiz result could not be read. Start a new quiz and submit it again.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const passed = !!result.passed;
+            const badgeClass = passed ? 'pass' : 'fail';
+            const badgeText = passed ? 'Pass' : 'Fail';
+            const submittedText = result.submittedUtc ? new Date(result.submittedUtc).toLocaleString() : 'Just now';
+
+            resultHost.innerHTML = `
+                <div class="result-card">
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                    <h2>${escapeHtml(result.quizTitle || 'Most recent quiz')}</h2>
+                    <p>Your latest completed quiz is recorded here so you can immediately see whether you passed or failed before choosing the next test.</p>
+                    <div class="stats">
+                        <div class="stat">
+                            Score
+                            <strong>${escapeHtml(result.scorePercent ?? 0)}%</strong>
+                        </div>
+                        <div class="stat">
+                            Correct
+                            <strong>${escapeHtml(result.correctCount ?? 0)} / ${escapeHtml(result.totalQuestions ?? 0)}</strong>
+                        </div>
+                        <div class="stat">
+                            Completed
+                            <strong style="font-size: 1rem;">${escapeHtml(submittedText)}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        render();
+    </script>
+</body>
+</html>
