@@ -7,14 +7,17 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using QuizAPI.Data;
 using QuizAPI.Models;
+using QuizAPI.Services;
 using Xunit;
 
 namespace QuizAPI.Tests;
 
 public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private readonly FakeEmailService _fakeEmailService = new();
     private readonly string _databaseName = $"QuizApiTests_{Guid.NewGuid():N}";
     private string ConnectionString
     {
@@ -47,6 +50,12 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IEmailService>();
+            services.AddSingleton(_fakeEmailService);
+            services.AddSingleton<IEmailService>(_fakeEmailService);
+        });
     }
 
     public async Task InitializeAsync()
@@ -88,6 +97,8 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("token").GetString() ?? throw new InvalidOperationException("Missing JWT token.");
     }
+
+    public FakeEmailService EmailService => _fakeEmailService;
 
     public async Task<string> CreateImportFileAsync(string contents, string fileName)
     {
@@ -190,3 +201,20 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         return new QuizDbContext(options);
     }
 }
+
+public sealed class FakeEmailService : IEmailService
+{
+    private readonly List<FakeEmailMessage> _messages = new();
+
+    public IReadOnlyList<FakeEmailMessage> Messages => _messages;
+
+    public Task SendAsync(string toEmail, string subject, string bodyText)
+    {
+        _messages.Add(new FakeEmailMessage(toEmail, subject, bodyText));
+        return Task.CompletedTask;
+    }
+
+    public void Clear() => _messages.Clear();
+}
+
+public sealed record FakeEmailMessage(string ToEmail, string Subject, string BodyText);

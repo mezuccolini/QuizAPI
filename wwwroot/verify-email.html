@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Cert Master Email Verification</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f5efe3;
+            --panel: rgba(255, 252, 247, 0.92);
+            --text: #182230;
+            --muted: #5f6c7d;
+            --accent: #0f3d57;
+            --accent-soft: #dcebf3;
+            --border: rgba(24, 34, 48, 0.12);
+            --shadow: rgba(24, 34, 48, 0.12);
+            --success-bg: #ecfdf3;
+            --success-text: #166534;
+            --error-bg: #fef2f2;
+            --error-text: #991b1b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(197, 127, 23, 0.15), transparent 28%),
+                radial-gradient(circle at top right, rgba(15, 61, 87, 0.18), transparent 22%),
+                linear-gradient(180deg, #fdf7ea 0%, var(--bg) 52%, #f1eadc 100%);
+            color: var(--text);
+            padding: 1.2rem;
+            display: grid;
+            place-items: center;
+        }
+
+        .panel {
+            width: min(720px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            box-shadow: 0 26px 54px var(--shadow);
+            padding: 1.6rem;
+            text-align: center;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            margin-bottom: 0.9rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0 0 0.8rem;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        p {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .tagline {
+            color: var(--accent);
+            font-weight: 700;
+            margin-top: -0.1rem;
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 16px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e3a8a;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .status.success {
+            background: var(--success-bg);
+            border-color: #bbf7d0;
+            color: var(--success-text);
+        }
+
+        .status.error {
+            background: var(--error-bg);
+            border-color: #fecaca;
+            color: var(--error-text);
+        }
+
+        .links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <section class="panel">
+        <div class="eyebrow">The Cert Master</div>
+        <h1>Verify your email</h1>
+        <p>We are confirming your account now.</p>
+        <p class="tagline">Pissing Certificate Excellence</p>
+
+        <div id="status" class="status" role="status" aria-live="polite">Checking your verification link...</div>
+
+        <div class="links">
+            <a href="/">Back to home</a>
+            <a href="/register.html">Create another account</a>
+        </div>
+    </section>
+
+    <script>
+        const statusBox = document.getElementById("status");
+
+        function setStatus(message, tone = "info") {
+            statusBox.className = `status${tone === "info" ? "" : " " + tone}`;
+            statusBox.textContent = message;
+        }
+
+        async function verifyEmail() {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get("userId");
+            const code = params.get("code");
+
+            if (!userId || !code) {
+                setStatus("Verification link is incomplete. Please use the full link from your email.", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/auth/confirm-email?userId=${encodeURIComponent(userId)}&code=${encodeURIComponent(code)}`);
+                const text = await response.text();
+
+                if (!response.ok) {
+                    setStatus(text || "Email verification failed.", "error");
+                    return;
+                }
+
+                let message = "Email address verified successfully.";
+                try {
+                    const parsed = JSON.parse(text);
+                    message = parsed.message || message;
+                } catch {}
+
+                setStatus(message, "success");
+            } catch (error) {
+                setStatus("Verification error: " + error.message, "error");
+            }
+        }
+
+        verifyEmail();
+    </script>
+</body>
+</html>

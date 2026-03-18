@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Cert Master Registration</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f5efe3;
+            --panel: rgba(255, 252, 247, 0.92);
+            --text: #182230;
+            --muted: #5f6c7d;
+            --accent: #0f3d57;
+            --accent-hover: #0b2d40;
+            --accent-soft: #dcebf3;
+            --highlight: #c57f17;
+            --border: rgba(24, 34, 48, 0.12);
+            --shadow: rgba(24, 34, 48, 0.12);
+            --success-bg: #ecfdf3;
+            --success-text: #166534;
+            --error-bg: #fef2f2;
+            --error-text: #991b1b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(197, 127, 23, 0.15), transparent 28%),
+                radial-gradient(circle at top right, rgba(15, 61, 87, 0.18), transparent 22%),
+                linear-gradient(180deg, #fdf7ea 0%, var(--bg) 52%, #f1eadc 100%);
+            color: var(--text);
+            padding: 1.2rem;
+        }
+
+        main {
+            width: min(840px, 100%);
+            margin: 0 auto;
+            padding: 2rem 0 3rem;
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+            gap: 1.2rem;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            box-shadow: 0 26px 54px var(--shadow);
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .eyebrow {
+            display: inline-block;
+            margin-bottom: 0.9rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1, h2 {
+            margin: 0 0 0.8rem;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        .lead, p, li {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .tagline {
+            margin-top: -0.2rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        form {
+            margin-top: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-top: 0.85rem;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            margin-top: 0.4rem;
+            padding: 0.85rem 0.95rem;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        button {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.95rem 1rem;
+            border: 1px solid var(--accent);
+            border-radius: 14px;
+            background: var(--accent);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button:hover { background: var(--accent-hover); }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.95rem 1rem;
+            border-radius: 16px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e3a8a;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .status.success {
+            background: var(--success-bg);
+            border-color: #bbf7d0;
+            color: var(--success-text);
+        }
+
+        .status.error {
+            background: var(--error-bg);
+            border-color: #fecaca;
+            color: var(--error-text);
+        }
+
+        .links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        ul {
+            padding-left: 1.1rem;
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 780px) {
+            .shell {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="shell">
+            <section class="panel">
+                <div class="eyebrow">The Cert Master</div>
+                <h1>Create your account</h1>
+                <p class="lead">Create a public user account with your email address, then verify it from the email we send you before signing in.</p>
+                <p class="tagline">Pissing Certificate Excellence</p>
+
+                <form id="registerForm">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" autocomplete="email" required />
+
+                    <label for="password">Password</label>
+                    <input type="password" id="password" autocomplete="new-password" required />
+
+                    <label for="confirmPassword">Confirm password</label>
+                    <input type="password" id="confirmPassword" autocomplete="new-password" required />
+
+                    <button type="submit">Create account</button>
+                </form>
+
+                <div id="status" class="status" role="status" aria-live="polite" style="display:none;"></div>
+
+                <div class="links">
+                    <a href="/">Back to home</a>
+                </div>
+            </section>
+
+            <aside class="panel">
+                <h2>What happens next</h2>
+                <ul>
+                    <li>Create your account using a valid email address.</li>
+                    <li>Open the verification email from The Cert Master.</li>
+                    <li>Click the verification link to activate your account.</li>
+                    <li>After verification, you can sign in anywhere the user login flow is available.</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        const form = document.getElementById("registerForm");
+        const statusBox = document.getElementById("status");
+
+        function setStatus(message, tone = "info") {
+            statusBox.style.display = "block";
+            statusBox.className = `status${tone === "info" ? "" : " " + tone}`;
+            statusBox.textContent = message;
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            setStatus("Creating your account...");
+
+            try {
+                const response = await fetch("/api/auth/public-register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password, confirmPassword })
+                });
+
+                const text = await response.text();
+
+                if (!response.ok) {
+                    setStatus(text || "Registration failed.", "error");
+                    return;
+                }
+
+                let message = "Registration successful. Please check your email for the verification link.";
+                try {
+                    const parsed = JSON.parse(text);
+                    message = parsed.message || message;
+                } catch {}
+
+                form.reset();
+                setStatus(message, "success");
+            } catch (error) {
+                setStatus("Registration error: " + error.message, "error");
+            }
+        });
+    </script>
+</body>
+</html>
