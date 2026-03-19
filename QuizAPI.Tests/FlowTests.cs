@@ -45,6 +45,42 @@ public class FlowTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(tokenElement.GetString()));
     }
 
+    [Fact]
+    public async Task HealthEndpoints_ReturnStructuredHealthyPayloads()
+    {
+        var client = _factory.CreateClient();
+
+        foreach (var path in new[] { "/health/live", "/health/ready", "/health" })
+        {
+            using var response = await client.GetAsync(path);
+            response.EnsureSuccessStatusCode();
+
+            var payload = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(payload);
+
+            Assert.Equal("Healthy", doc.RootElement.GetProperty("status").GetString());
+            Assert.True(doc.RootElement.TryGetProperty("checks", out _));
+            Assert.True(doc.RootElement.TryGetProperty("traceId", out _));
+        }
+    }
+
+    [Fact]
+    public async Task VersionEndpoint_ReturnsApplicationMetadata()
+    {
+        var client = _factory.CreateClient();
+
+        using var response = await client.GetAsync("/version");
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(payload);
+
+        Assert.Equal("QuizAPI", doc.RootElement.GetProperty("application").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(doc.RootElement.GetProperty("environment").GetString()));
+        Assert.True(doc.RootElement.TryGetProperty("version", out _));
+        Assert.True(doc.RootElement.TryGetProperty("utc", out _));
+    }
+
 
     [Fact]
     public async Task GetQuizList_ReturnsSeededQuiz()

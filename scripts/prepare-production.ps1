@@ -37,6 +37,10 @@ Jwt__Issuer=$JwtIssuer
 Jwt__Audience=$JwtAudience
 Cors__AllowedOrigins__0=$CorsOrigin
 PublicApp__BaseUrl=$PublicBaseUrl
+Swagger__Enabled=false
+RateLimiting__AuthAttemptsPerMinute=8
+RateLimiting__GuestQuizLoadsPerMinute=20
+RateLimiting__AuthenticatedQuizLoadsPerMinute=60
 "@
 
 Set-Content -Path $envTemplatePath -Value $envTemplate -Encoding UTF8

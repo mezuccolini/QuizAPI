@@ -30,6 +30,7 @@ Optional production settings:
 ```text
 Logging__LogLevel__Default=Information
 Logging__LogLevel__Microsoft=Warning
+Swagger__Enabled=false
 RateLimiting__AuthAttemptsPerMinute=8
 RateLimiting__GuestQuizLoadsPerMinute=20
 RateLimiting__AuthenticatedQuizLoadsPerMinute=60
@@ -114,6 +115,15 @@ Production behavior now includes:
 
 If you tighten or relax rate limits in production, record those settings alongside the deployment so operators know the expected thresholds.
 
+Monitoring surfaces now available:
+
+- `/health/live`: process liveness
+- `/health/ready`: app + database readiness
+- `/health`: combined health payload
+- `/version`: app/environment metadata for quick verification
+
+Unhandled API failures return a trace id in the response body. That trace id should be included in any support or operator notes so the matching log entry can be found quickly.
+
 ## Pre-Deployment Checklist
 
 - production connection string is set
@@ -126,6 +136,7 @@ If you tighten or relax rate limits in production, record those settings alongsi
 - sample/dev credentials are not relied on in production
 - `ASPNETCORE_ENVIRONMENT` is set to `Production`
 - `/health` is reachable from the deployment target
+- `/health/live` and `/health/ready` are reachable from the deployment target
 - runtime folders for `App_Data` and `wwwroot/uploads/images` are writable
 - the release notes and changelog match the code being deployed
 
@@ -136,16 +147,25 @@ If you tighten or relax rate limits in production, record those settings alongsi
 - publish to a clean output folder
 - apply production migration in a controlled step
 - smoke test `/`, `/swapi.html`, and `/health`
+- smoke test `/health/live`, `/health/ready`, and `/version`
 - verify admin login and a sample quiz import
 - verify public login / reset / resend flows return sensible `429` messages under repeated requests
 - publish the matching Git tag and GitHub release notes
 
+Recommended automated smoke test:
+
+```powershell
+pwsh .\scripts\post-deploy-smoke-test.ps1 -BaseUrl https://your-production-site.example
+```
+
 ## Post-Deployment Smoke Test
 
 1. Open the landing page
-2. Verify `/health` returns success
-3. Verify `/swapi.html` loads
-4. Test admin login
-5. Test quiz list retrieval
-6. Upload and import a sample quiz package
-7. Open a quiz and confirm images render
+2. Verify `/health/live` returns success
+3. Verify `/health/ready` returns success
+4. Verify `/version` returns the expected environment
+5. Verify `/swapi.html` loads only if Swagger was intentionally enabled
+6. Test admin login
+7. Test quiz list retrieval
+8. Upload and import a sample quiz package
+9. Open a quiz and confirm images render

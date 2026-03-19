@@ -14,6 +14,8 @@ The format is based on Keep a Changelog, and this project follows semantic-style
 - Quiz result home page for the most recent submitted attempt
 - Rate limiting for auth-sensitive public endpoints and quiz loading
 - Structured security logging for auth failures, admin actions, SMTP changes, and import failures
+- Liveness, readiness, and version endpoints for deployment monitoring
+- Post-deploy smoke-test script and external user testing guide
 
 ### Changed
 
@@ -23,6 +25,9 @@ The format is based on Keep a Changelog, and this project follows semantic-style
 - Admin dashboard now restores only valid admin sessions and clears stale or unauthorized tokens automatically
 - User-facing browser pages now surface cleaner API error messages
 - Profile-oriented text inputs are now normalized to plain letters and spaces where appropriate
+- Production startup now also requires `PublicApp:BaseUrl`
+- Swagger is now explicitly controlled by configuration instead of environment alone
+- Quiz setup now shows a clearer total-question summary before loading
 
 ## [v0.1.0-alpha] - 2026-03-17
 

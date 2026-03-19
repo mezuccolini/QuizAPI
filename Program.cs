@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +21,8 @@ using System.Threading.RateLimiting;
 using QuizAPI.Data;
 using QuizAPI.Models;
 using QuizAPI.Services;
+using System.Diagnostics;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +30,9 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 var jwtKey = builder.Configuration["Jwt:Key"];
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var publicBaseUrl = builder.Configuration["PublicApp:BaseUrl"];
+var swaggerEnabled = builder.Configuration.GetValue<bool?>("Swagger:Enabled")
+    ?? builder.Environment.IsDevelopment();
 var authAttemptsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:AuthAttemptsPerMinute")
     ?? (builder.Environment.IsDevelopment() ? 30 : 8);
 var guestQuizLoadsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:GuestQuizLoadsPerMinute")
@@ -50,6 +58,11 @@ if (!builder.Environment.IsDevelopment() &&
     throw new InvalidOperationException("Production requires a real ConnectionStrings:DefaultConnection value. Replace the placeholder with an environment-specific secret.");
 }
 
+if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(publicBaseUrl))
+{
+    throw new InvalidOperationException("Production requires PublicApp:BaseUrl so email links and browser flows point to the correct public host.");
+}
+
 var jwtSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
 // Persist DataProtection keys so cookies/auth survive IIS recycles/reboots
@@ -69,7 +82,19 @@ if (OperatingSystem.IsWindows())
 // Controllers & JSON
 builder.Services.AddControllers()
     .AddJsonOptions(o => { o.JsonSerializerOptions.PropertyNamingPolicy = null; });
-builder.Services.AddHealthChecks();
+builder.Services.AddProblemDetails();
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields =
+        HttpLoggingFields.RequestMethod |
+        HttpLoggingFields.RequestPath |
+        HttpLoggingFields.RequestQuery |
+        HttpLoggingFields.ResponseStatusCode |
+        HttpLoggingFields.Duration;
+});
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Application is running."), tags: ["live"])
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -214,6 +239,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
@@ -279,19 +311,56 @@ builder.Services.AddDbContext<QuizDbContext>(options =>
 builder.Services.AddScoped<QuizQueryService>();
 builder.Services.AddScoped<QuizImportService>();
 builder.Services.AddScoped<SampleDataSeeder>();
+builder.Services.AddScoped<DatabaseHealthCheck>();
 
 // SMTP settings + email service (supports authenticated and unauthenticated relay)
 builder.Services.AddScoped<ISmtpSettingsStore, FileSmtpSettingsStore>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
+var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
-if (app.Environment.IsDevelopment())
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("UnhandledException");
+
+        if (exceptionFeature?.Error != null)
+        {
+            logger.LogError(
+                exceptionFeature.Error,
+                "Unhandled exception for {Method} {Path} TraceId={TraceId}",
+                context.Request.Method,
+                context.Request.Path,
+                context.TraceIdentifier);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+        if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                message = "Something went wrong while processing the request.",
+                traceId = context.TraceIdentifier
+            }));
+            return;
+        }
+
+        context.Response.ContentType = "text/plain; charset=utf-8";
+        await context.Response.WriteAsync($"Something went wrong. TraceId: {context.TraceIdentifier}");
+    });
+});
+
+if (swaggerEnabled)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -301,17 +370,57 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseHttpLogging();
 app.UseCors(CorsPolicyName);
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.Use(async (context, next) =>
+{
+    if (Activity.Current?.Id is { Length: > 0 } traceId)
+    {
+        context.Response.Headers["X-Trace-Id"] = traceId;
+    }
+
+    await next();
+});
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live"),
+    ResponseWriter = HealthCheckResponseWriter.WriteJsonAsync
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = HealthCheckResponseWriter.WriteJsonAsync
+});
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = HealthCheckResponseWriter.WriteJsonAsync
+});
+app.MapGet("/version", (IHostEnvironment environment) =>
+{
+    var assembly = typeof(Program).Assembly.GetName();
+    var informationalVersion = assembly.Version?.ToString() ?? "unknown";
+
+    return Results.Ok(new
+    {
+        application = assembly.Name ?? "QuizAPI",
+        version = informationalVersion,
+        environment = environment.EnvironmentName,
+        utc = DateTime.UtcNow
+    });
+})
+.AllowAnonymous();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -372,6 +481,12 @@ using (var scope = app.Services.CreateScope())
         }
     }
 }
+
+startupLogger.LogInformation(
+    "QuizAPI started in {Environment}. SwaggerEnabled={SwaggerEnabled}. BaseUrl={BaseUrl}. Health endpoints: /health/live, /health/ready, /health",
+    app.Environment.EnvironmentName,
+    swaggerEnabled,
+    string.IsNullOrWhiteSpace(publicBaseUrl) ? "not-set" : publicBaseUrl);
 
 app.Run();
 

@@ -117,6 +117,22 @@ Check:
 
 See [DEPLOYMENT.md](../DEPLOYMENT.md) for the expected production setup.
 
+## Which health endpoint should I use?
+
+Use:
+
+- `/health/live` to confirm the web app process is running
+- `/health/ready` to confirm the app can also reach the database
+- `/health` if you want the combined JSON payload
+
+For quick operator checks, `/version` also returns the app name, version, environment, and UTC timestamp.
+
+## Why did I get a trace id with a server error?
+
+Unhandled API errors now return a trace id so the failure in the browser can be matched to the corresponding server log entry.
+
+If a user reports a failure, ask them for the trace id shown in the response and look for that same value in the application logs.
+
 ## Why did the admin dashboard sign me out automatically?
 
 [manage.html](../wwwroot/manage.html) now verifies that the saved token is still valid and still belongs to an `Admin` user.
@@ -136,3 +152,7 @@ Passwords and email addresses keep their normal required character flexibility, 
 ## Where can I find the import format?
 
 See [import-format.md](import-format.md).
+
+## How do I prepare for outside testers?
+
+Use [external-user-testing.md](external-user-testing.md).

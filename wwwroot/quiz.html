@@ -205,6 +205,10 @@
             font-size: 0.95rem;
         }
 
+        .setup-summary {
+            margin-top: 2px;
+        }
+
         .checkbox-row input[type="checkbox"] {
             width: auto;
             min-width: 0;
@@ -521,6 +525,7 @@
                         <input type="checkbox" id="allQuestionsCheckbox" checked />
                         <span>Use all available questions by default</span>
                     </label>
+                    <div id="selectionSummary" class="helper setup-summary"></div>
                 </div>
             </div>
 
@@ -673,6 +678,7 @@
         const categoryPoolSummary = el('categoryPoolSummary');
         const questionCountInput = el('questionCountInput');
         const allQuestionsCheckbox = el('allQuestionsCheckbox');
+        const selectionSummary = el('selectionSummary');
         const timerSelect = el('timerSelect');
         const pageTitle = el('pageTitle');
         const pickerCard = el('pickerCard');
@@ -807,6 +813,7 @@
                 questionCountInput.value = String(guestQuestionLimit);
                 allQuestionsCheckbox.checked = false;
                 allQuestionsCheckbox.disabled = true;
+                updateSelectionSummary();
                 return;
             }
 
@@ -829,6 +836,8 @@
             } else {
                 allQuestionsCheckbox.disabled = false;
             }
+
+            updateSelectionSummary();
         }
 
         function getRequestedQuestionCount() {
@@ -850,6 +859,45 @@
             }
 
             return Math.max(minimum, Math.min(maximum, requested));
+        }
+
+        function updateSelectionSummary() {
+            if (!selectionSummary) {
+                return;
+            }
+
+            const selectedCategories = getSelectedCategories();
+            const timerMinutes = parseInt(timerSelect.value || '0', 10);
+            const timerText = timerMinutes > 0
+                ? ` Timer: ${timerMinutes} minute${timerMinutes === 1 ? '' : 's'}.`
+                : ' No timer selected.';
+
+            if (selectedCategories.length === 0) {
+                selectionSummary.textContent = 'Select at least one category to begin building your quiz setup.';
+                return;
+            }
+
+            if (selectedCategories.length > 1) {
+                const perCategoryCount = getRequestedQuestionCount();
+                const totalQuestions = perCategoryCount * selectedCategories.length;
+
+                selectionSummary.textContent = isGuestUser()
+                    ? `Guest setup: ${guestQuestionLimit} questions will be pulled from each selected category (${selectedCategories.length} x ${guestQuestionLimit} = ${totalQuestions} total).${timerText}`
+                    : `Mixed-category setup: ${perCategoryCount} questions will be pulled from each selected category (${selectedCategories.length} x ${perCategoryCount} = ${totalQuestions} total).${timerText}`;
+                return;
+            }
+
+            if (isGuestUser()) {
+                selectionSummary.textContent = `Guest setup: this quiz will load up to ${guestQuestionLimit} questions total.${timerText}`;
+                return;
+            }
+
+            if (allQuestionsCheckbox.checked) {
+                selectionSummary.textContent = `Single-quiz setup: all ${currentAvailableQuestionCount} available questions will be loaded.${timerText}`;
+                return;
+            }
+
+            selectionSummary.textContent = `Single-quiz setup: ${getRequestedQuestionCount()} questions will be loaded.${timerText}`;
         }
 
         async function updateQuizPickerForSingleCategory(category) {
@@ -891,6 +939,7 @@
                 fillQuizSelect([]);
                 quizSelect.disabled = true;
                 syncQuestionCountControls(20);
+                updateSelectionSummary();
                 return;
             }
 
@@ -909,6 +958,7 @@
                         `Category pool mode is active for ${selectedCategories[0]}. Choose one of the ${quizzes.length} quizzes in this category.${isGuestUser() ? ' Guest users are limited to 5 questions for this quiz and 3 total attempts.' : ''}`;
                 }
 
+                updateSelectionSummary();
                 return;
             }
 
@@ -931,9 +981,11 @@
                             ? `Mixed category mode is active. Guest users receive ${guestQuestionLimit} questions from each selected category, with ${guestAttemptLimit} total attempts before registration is required. ${counts}`
                             : `Mixed category mode is active. The How many questions field is a per-category amount from 20 to 50. Your total question pool is that number multiplied by the number of selected categories, and that amount is pulled from each selected category based on availability. ${counts}`;
                 }
+                updateSelectionSummary();
             } catch {
                 categoryPoolSummary.textContent = 'Could not load category pool details right now.';
                 syncQuestionCountControls(20);
+                updateSelectionSummary();
             }
         }
 
@@ -1333,12 +1385,14 @@
                 questionCountInput.value = String(Math.max(minimum, currentAvailableQuestionCount));
             }
             syncQuestionCountControls(currentAvailableQuestionCount);
+            updateSelectionSummary();
         });
 
         questionCountInput.addEventListener('input', () => {
             if (allQuestionsCheckbox.checked) {
                 allQuestionsCheckbox.checked = false;
             }
+            updateSelectionSummary();
         });
 
         questionCountInput.addEventListener('change', () => {
@@ -1351,6 +1405,11 @@
                 ? minimum
                 : Math.max(minimum, Math.min(maximum, requested));
             questionCountInput.value = String(normalizedValue);
+            updateSelectionSummary();
+        });
+
+        timerSelect.addEventListener('change', () => {
+            updateSelectionSummary();
         });
 
         // Init
@@ -1368,6 +1427,7 @@
                 syncQuestionCountControls(20);
                 await updateCategoryPoolState();
                 updateGuestStatusNotice();
+                updateSelectionSummary();
             } catch {
                 fillQuizSelect([]);
                 renderCategoryCheckboxes([]);
@@ -1375,6 +1435,7 @@
                 syncQuestionCountControls(20);
                 await updateCategoryPoolState();
                 updateGuestStatusNotice();
+                updateSelectionSummary();
             }
 
             const qid = guidFromQuery();

@@ -11,6 +11,7 @@ Use this short checklist before pushing a tagged release.
 - verify [README.md](../README.md) reflects any new user-facing setup changes
 - verify [DEPLOYMENT.md](../DEPLOYMENT.md) still matches production expectations
 - verify rate-limit guidance still matches the configured app defaults
+- verify [external-user-testing.md](./external-user-testing.md) still matches the current flows
 
 ## Before Tagging
 
@@ -18,6 +19,7 @@ Use this short checklist before pushing a tagged release.
 - confirm sample/dev-only changes are not leaking into production defaults
 - confirm JWT and connection string guidance is still accurate
 - confirm security logging and rate-limit behavior still match the current release
+- confirm `/health/live`, `/health/ready`, `/health`, and `/version` return the expected payloads
 - confirm the sample package and import docs still work end to end
 
 ## Before Publishing The GitHub Release
@@ -32,7 +34,11 @@ Use this short checklist before pushing a tagged release.
 - open `/`
 - open `/swapi.html`
 - verify `/health`
+- verify `/health/live`
+- verify `/health/ready`
+- verify `/version`
 - log in through [manage.html](../wwwroot/manage.html)
 - verify stale or non-admin sessions are rejected cleanly by [manage.html](../wwwroot/manage.html)
 - upload and import a sample package
 - open [quiz.html](../wwwroot/quiz.html) and verify quiz images render
+- confirm the quiz setup summary reflects the selected category count and question count

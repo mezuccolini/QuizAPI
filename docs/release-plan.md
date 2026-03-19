@@ -39,8 +39,15 @@
 ### Operational Readiness
 
 - health check endpoint exists
+- separate liveness and readiness endpoints exist
+- a post-deploy smoke-test script exists
 - CI build/test automation exists
 - versioned release notes exist for the beta tag
+
+### External User Readiness
+
+- a documented outside-tester script exists
+- guest flow, registration, verification, password reset, and quiz submission can be exercised without developer guidance
 
 ## Not Required Yet
 

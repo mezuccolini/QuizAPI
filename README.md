@@ -16,6 +16,7 @@ This repository is the active source-of-truth application for the project.
 - SMTP configuration and email test endpoints
 - rate limiting for public auth flows and quiz loading
 - browser-based pages for public access, account management, quiz running, and admin upload/import work
+- structured health, readiness, and version endpoints for deployment monitoring
 
 ## Tech Stack
 
@@ -199,6 +200,7 @@ Important configuration keys:
 - `RateLimiting:AuthAttemptsPerMinute`
 - `RateLimiting:GuestQuizLoadsPerMinute`
 - `RateLimiting:AuthenticatedQuizLoadsPerMinute`
+- `Swagger:Enabled`
 
 ## Security Hardening
 
@@ -237,6 +239,27 @@ PublicApp__BaseUrl=https://your-production-site.example
 
 Startup will now fail fast if required production configuration is missing.
 
+## Monitoring And Runtime Checks
+
+Operational endpoints:
+
+- `/health/live`: confirms the app process is running
+- `/health/ready`: confirms the app can reach the configured database
+- `/health`: combined status payload
+- `/version`: returns app name, version, environment, and current UTC time
+
+Runtime visibility:
+
+- structured request logging is enabled through ASP.NET Core HTTP logging
+- unhandled API errors return a trace id so logs can be matched to user-reported failures
+- key auth, admin, SMTP, import, and rate-limit events are logged through `ILogger`
+
+For post-deploy smoke checks, run:
+
+```powershell
+pwsh .\scripts\post-deploy-smoke-test.ps1 -BaseUrl https://your-production-site.example
+```
+
 ## Build
 
 ```powershell
@@ -251,11 +274,13 @@ dotnet build
 - [release checklist](docs/release-checklist.md): pre-push and release verification steps
 - [DEPLOYMENT.md](DEPLOYMENT.md): production deployment guide
 - [FAQ.md](docs/FAQ.md): common setup and troubleshooting questions
+- [external user testing guide](docs/external-user-testing.md): structured outside-tester workflow for beta readiness
 
 ## Automation Helpers
 
 - [bootstrap-dev.ps1](scripts/bootstrap-dev.ps1): restore, build, and initialize a local development setup
 - [prepare-production.ps1](scripts/prepare-production.ps1): publish a release build and generate a production env template
+- [post-deploy-smoke-test.ps1](scripts/post-deploy-smoke-test.ps1): verify landing page, health endpoints, and version endpoint after deployment
 - [appsettings.Production.template.json](appsettings.Production.template.json): production configuration reference
 
 ## Health Check
