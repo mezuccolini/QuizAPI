@@ -8,7 +8,7 @@ This document describes the supported quiz import formats for `DevQuizAPI`.
 - `.txt`
 - `.zip`
 
-Use the admin page at [upload.html](D:\Quiz_Application\DevQuizAPI\wwwroot\upload.html) to upload import files.
+Use the admin page at [manage.html](../wwwroot/manage.html) to upload import files.
 
 ## CSV Columns
 
@@ -82,11 +82,11 @@ After import:
 
 - the image file is extracted to `wwwroot/uploads/images/...`
 - an image record is created in the database
-- [quiz.html](D:\Quiz_Application\DevQuizAPI\wwwroot\quiz.html) renders the question image automatically
+- [quiz.html](../wwwroot/quiz.html) renders the question image automatically
 
 ## ZIP Upload Workflow
 
-1. Upload the ZIP file in [upload.html](D:\Quiz_Application\DevQuizAPI\wwwroot\upload.html).
+1. Upload the ZIP file in [manage.html](../wwwroot/manage.html).
 2. The server extracts the CSV and images.
 3. The admin page shows the extracted CSV file name.
 4. Import that extracted CSV into the database.

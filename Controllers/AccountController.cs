@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTO;
+using QuizAPI.Models;
+using QuizAPI.Validation;
 
 namespace QuizAPI.Controllers
 {
@@ -14,12 +16,14 @@ namespace QuizAPI.Controllers
     public class AccountController : ControllerBase
     {
         private readonly QuizDbContext _db;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(QuizDbContext db, UserManager<IdentityUser> userManager)
+        public AccountController(QuizDbContext db, UserManager<ApplicationUser> userManager, ILogger<AccountController> logger)
         {
             _db = db;
             _userManager = userManager;
+            _logger = logger;
         }
 
         [HttpGet("me")]
@@ -38,6 +42,8 @@ namespace QuizAPI.Controllers
             return Ok(new AccountProfileDto
             {
                 Email = user.Email ?? user.UserName ?? string.Empty,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 EmailConfirmed = user.EmailConfirmed,
                 Role = roles.FirstOrDefault() ?? "User",
                 TotalAttempts = attempts.Count,
@@ -97,16 +103,20 @@ namespace QuizAPI.Controllers
 
             var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
             if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            {
+                _logger.LogWarning("Password change failed for user {UserId}", user.Id);
+                return BadRequest(ApiErrorFormatter.SummarizeIdentityErrors(result.Errors, "Password update failed."));
+            }
 
+            _logger.LogInformation("Password changed for user {UserId}", user.Id);
             return Ok(new { message = "Password updated successfully." });
         }
 
-        private Task<IdentityUser?> GetCurrentUserAsync()
+        private Task<ApplicationUser?> GetCurrentUserAsync()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
-                return Task.FromResult<IdentityUser?>(null);
+                return Task.FromResult<ApplicationUser?>(null);
 
             return _userManager.FindByIdAsync(userId);
         }

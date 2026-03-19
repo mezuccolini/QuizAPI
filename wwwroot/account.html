@@ -38,9 +38,51 @@
         }
 
         main {
-            width: min(1120px, 100%);
+            width: min(1288px, 100%);
             margin: 0 auto;
             padding: 1.6rem 0 3rem;
+        }
+
+        .top-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            padding: 0.95rem 1rem;
+            background: rgba(255, 252, 247, 0.78);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 18px 36px rgba(24, 34, 48, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .top-links-label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-right: 0.2rem;
+        }
+
+        .top-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(24, 34, 48, 0.12);
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .top-link:hover {
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(15, 61, 87, 0.24);
         }
 
         .shell {
@@ -66,7 +108,7 @@
         .hero-grid,
         .account-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.9fr);
+            grid-template-columns: minmax(0, 1.25fr) minmax(345px, 1.04fr);
             gap: 1.2rem;
         }
 
@@ -182,7 +224,7 @@
         }
 
         .stat {
-            min-width: 150px;
+            min-width: 173px;
             padding: 1rem;
             border-radius: 18px;
             border: 1px solid rgba(24, 34, 48, 0.08);
@@ -264,6 +306,15 @@
 </head>
 <body>
     <main>
+        <nav class="top-links" aria-label="Site pages">
+            <span class="top-links-label">Pages</span>
+            <a class="top-link" href="/">Home</a>
+            <a class="top-link" href="/account.html">Account</a>
+            <a class="top-link" href="/quiz.html">Quiz</a>
+            <a class="top-link" href="/register.html">Register</a>
+            <a class="top-link" href="/result-home.html">Results</a>
+            <a class="top-link" href="/verify-email.html">Verify Email</a>
+        </nav>
         <div class="shell">
             <section class="hero">
                 <div class="hero-grid">
@@ -276,7 +327,7 @@
                         <div class="quick-links">
                             <a class="button-secondary" href="/">Back to home</a>
                             <a class="button-secondary" href="/quiz.html">Open quiz selection</a>
-                            <a class="button-secondary" href="/register.html">Create account</a>
+                            <button type="button" id="btnHeroSignOut" class="button-secondary">Log out</button>
                         </div>
                     </div>
                     <div class="panel" style="padding: 1.1rem;">
@@ -299,6 +350,7 @@
 
                     <div class="actions" style="margin-top: 1rem;">
                         <button type="submit">Sign in</button>
+                        <button type="button" id="btnLoginSignOut" class="button-secondary">Log out</button>
                     </div>
                 </form>
                 <div id="loginStatus" class="status hidden" role="status" aria-live="polite"></div>
@@ -371,6 +423,8 @@
         const statFailed = document.getElementById("statFailed");
         const btnRefresh = document.getElementById("btnRefresh");
         const btnSignOut = document.getElementById("btnSignOut");
+        const btnHeroSignOut = document.getElementById("btnHeroSignOut");
+        const btnLoginSignOut = document.getElementById("btnLoginSignOut");
 
         function getToken() {
             return localStorage.getItem(tokenKey);
@@ -420,6 +474,30 @@
             box.className = "status hidden";
         }
 
+        function parseApiMessage(text, status, fallbackMessage) {
+            if (!text) {
+                if (status === 401) return "Please sign in to continue.";
+                if (status === 403) return "You do not have permission to do that.";
+                if (status === 429) return "Too many requests were sent. Please wait a moment and try again.";
+                return fallbackMessage || `Request failed with status ${status}.`;
+            }
+
+            try {
+                const parsed = JSON.parse(text);
+                if (typeof parsed === "string" && parsed.trim()) return parsed.trim();
+                if (Array.isArray(parsed)) {
+                    const messages = parsed
+                        .map(item => item?.description || item?.Description || item?.message || item?.Message)
+                        .filter(Boolean);
+                    if (messages.length) return messages.join("; ");
+                }
+
+                return parsed.detail || parsed.title || parsed.message || parsed.Message || text;
+            } catch {
+                return text;
+            }
+        }
+
         async function fetchJson(url, options = {}) {
             const token = getToken();
             const headers = new Headers(options.headers || {});
@@ -431,7 +509,7 @@
             const text = await response.text();
 
             if (!response.ok) {
-                throw new Error(text || `Request failed with status ${response.status}.`);
+                throw new Error(parseApiMessage(text, response.status, `Request failed with status ${response.status}.`));
             }
 
             return text ? normalizeKeys(JSON.parse(text)) : {};
@@ -475,7 +553,9 @@
                     fetchJson("/api/account/attempts")
                 ]);
 
-                accountLead.textContent = `${profile.email} · ${profile.role}${profile.emailConfirmed ? " · verified" : " · not yet verified"}`;
+                const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim();
+                const namePrefix = fullName ? `${fullName} · ` : "";
+                accountLead.textContent = `${namePrefix}${profile.email} · ${profile.role}${profile.emailConfirmed ? " · verified" : " · not yet verified"}`;
                 statTotal.textContent = profile.totalAttempts;
                 statPassed.textContent = profile.passedAttempts;
                 statFailed.textContent = profile.failedAttempts;
@@ -507,7 +587,7 @@
 
                 const text = await response.text();
                 if (!response.ok) {
-                    throw new Error(text || "Sign-in failed.");
+                    throw new Error(parseApiMessage(text, response.status, "Sign-in failed."));
                 }
 
                 const payload = text ? JSON.parse(text) : {};
@@ -553,6 +633,20 @@
         });
 
         btnSignOut.addEventListener("click", () => {
+            setToken(null);
+            accountPanel.classList.add("hidden");
+            loginPanel.classList.remove("hidden");
+            setStatus("loginStatus", "Signed out.", "success");
+        });
+
+        btnHeroSignOut.addEventListener("click", () => {
+            setToken(null);
+            accountPanel.classList.add("hidden");
+            loginPanel.classList.remove("hidden");
+            setStatus("loginStatus", "Signed out.", "success");
+        });
+
+        btnLoginSignOut.addEventListener("click", () => {
             setToken(null);
             accountPanel.classList.add("hidden");
             loginPanel.classList.remove("hidden");

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Services;
+using QuizAPI.Validation;
 
 namespace QuizAPI.Controllers
 {
@@ -11,11 +12,13 @@ namespace QuizAPI.Controllers
     {
         private readonly ISmtpSettingsStore _store;
         private readonly IEmailService _email;
+        private readonly ILogger<SmtpAdminController> _logger;
 
-        public SmtpAdminController(ISmtpSettingsStore store, IEmailService email)
+        public SmtpAdminController(ISmtpSettingsStore store, IEmailService email, ILogger<SmtpAdminController> logger)
         {
             _store = store;
             _email = email;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -57,6 +60,8 @@ namespace QuizAPI.Controllers
             if (string.IsNullOrWhiteSpace(req.Host)) return BadRequest("Host is required.");
             if (req.Port <= 0) return BadRequest("Port must be > 0.");
             if (string.IsNullOrWhiteSpace(req.FromEmail)) return BadRequest("FromEmail is required.");
+            if (!PlainTextInputValidator.TryNormalizePersonName(req.FromName, "From name", required: false, out var fromName, out var fromNameError))
+                return BadRequest(fromNameError);
 
             var opt = new SmtpOptions
             {
@@ -67,10 +72,11 @@ namespace QuizAPI.Controllers
                 Username = req.Username?.Trim() ?? "",
                 Password = req.Password ?? "",
                 FromEmail = req.FromEmail.Trim(),
-                FromName = req.FromName?.Trim() ?? "QuizAPI"
+                FromName = string.IsNullOrWhiteSpace(fromName) ? "QuizAPI" : fromName
             };
 
             await _store.SaveAsync(opt, req.KeepExistingPasswordWhenBlank);
+            _logger.LogInformation("SMTP settings updated for host {Host} with from address {FromEmail}", opt.Host, opt.FromEmail);
             return Ok(new { message = "SMTP settings saved." });
         }
 
@@ -86,6 +92,7 @@ namespace QuizAPI.Controllers
                 return BadRequest("ToEmail is required.");
 
             await _email.SendAsync(req.ToEmail.Trim(), "QuizAPI SMTP Test", "This is a test email from QuizAPI.");
+            _logger.LogInformation("SMTP test email sent to {ToEmail}", req.ToEmail.Trim());
             return Ok(new { message = "Test email sent." });
         }
     }

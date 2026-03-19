@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 {
     private readonly FakeEmailService _fakeEmailService = new();
     private readonly string _databaseName = $"QuizApiTests_{Guid.NewGuid():N}";
+    private readonly IDictionary<string, string?>? _overrides;
     private string ConnectionString
     {
         get
@@ -26,7 +28,7 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
             var baseConnection = Environment.GetEnvironmentVariable("TEST_SQLSERVER_BASE_CONNECTION");
             if (string.IsNullOrWhiteSpace(baseConnection))
             {
-                return $"Server=.\\SQLEXPRESS;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+                return $"Server=.\\SQLEXPRESS;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=True;MultipleActiveResultSets=True;";
             }
 
             var builder = new SqlConnectionStringBuilder(baseConnection)
@@ -34,12 +36,22 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
                 InitialCatalog = _databaseName
             };
 
+            builder.TrustServerCertificate = true;
+
+            builder.Encrypt = SqlConnectionEncryptOption.Mandatory;
+
             return builder.ConnectionString;
         }
     }
 
     public QuizApiWebApplicationFactory()
+        : this(null)
     {
+    }
+
+    private QuizApiWebApplicationFactory(IDictionary<string, string?>? overrides)
+    {
+        _overrides = overrides;
         Environment.SetEnvironmentVariable("Jwt__Key", "Integration_Test_Jwt_Key_123456789012345");
         Environment.SetEnvironmentVariable("Jwt__Issuer", "QuizAPI-Tests");
         Environment.SetEnvironmentVariable("Jwt__Audience", "QuizAPI-Tests-Users");
@@ -47,9 +59,20 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         Environment.SetEnvironmentVariable("SampleData__Enabled", "false");
     }
 
+    public static QuizApiWebApplicationFactory CreateWithOverrides(IDictionary<string, string?> overrides)
+        => new(overrides);
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        if (_overrides is not null && _overrides.Count > 0)
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(_overrides);
+            });
+        }
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IEmailService>();
@@ -119,7 +142,7 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<QuizDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
         await db.Database.MigrateAsync();
@@ -138,10 +161,12 @@ public class QuizApiWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         var existingUser = await userManager.FindByEmailAsync(adminEmail);
         if (existingUser == null)
         {
-            existingUser = new IdentityUser
+            existingUser = new ApplicationUser
             {
                 UserName = adminEmail,
                 Email = adminEmail,
+                FirstName = "Admin",
+                LastName = "User",
                 EmailConfirmed = true
             };
 

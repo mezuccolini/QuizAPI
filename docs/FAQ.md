@@ -90,11 +90,17 @@ The endpoint is protected and Swagger is not yet sending your token.
 
 Log in first, copy the JWT, then authorize with `Bearer <token>`.
 
+## Why am I seeing `429 Too Many Requests`?
+
+The application now rate-limits repeated requests on public auth-sensitive endpoints and quiz-loading endpoints.
+
+If you hit `429`, wait a moment and try again instead of rapidly retrying the same request.
+
 ## Why am I getting `415 Unsupported Media Type` on login?
 
 The login endpoint expects form data in Swagger and browser form posts.
 
-If you are calling the API yourself, use the format supported by the endpoint or follow the browser examples in [upload.html](../wwwroot/upload.html).
+If you are calling the API yourself, use the format supported by the endpoint or follow the browser examples in [manage.html](../wwwroot/manage.html).
 
 ## Why does the app fail on startup in production?
 
@@ -110,6 +116,22 @@ Check:
 - `PublicApp__BaseUrl`
 
 See [DEPLOYMENT.md](../DEPLOYMENT.md) for the expected production setup.
+
+## Why did the admin dashboard sign me out automatically?
+
+[manage.html](../wwwroot/manage.html) now verifies that the saved token is still valid and still belongs to an `Admin` user.
+
+If the token has expired or the account is not an admin, the page clears the saved session and sends you back to the admin login form with a clearer message.
+
+## Which text inputs are restricted to normal text now?
+
+Profile-oriented name fields are normalized to letters and spaces only:
+
+- public registration first name / last name
+- admin-created and admin-edited user first name / last name
+- SMTP `From Name`
+
+Passwords and email addresses keep their normal required character flexibility, and imported quiz content is intentionally left more permissive because quiz text often needs punctuation.
 
 ## Where can I find the import format?
 

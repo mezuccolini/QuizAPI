@@ -47,6 +47,48 @@
             margin: 0 auto;
         }
 
+        .top-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            align-items: center;
+            margin: 0 0 1.2rem;
+            padding: 0.95rem 1rem;
+            background: rgba(255, 252, 247, 0.78);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 18px 36px rgba(24, 34, 48, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .top-links-label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-right: 0.2rem;
+        }
+
+        .top-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(24, 34, 48, 0.12);
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .top-link:hover {
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(15, 61, 87, 0.24);
+        }
+
         .wrap::before,
         .wrap::after {
             content: "";
@@ -123,13 +165,85 @@
             font-weight: 600;
         }
 
-        input[type="text"], select {
+        input[type="text"], input[type="number"], select {
             padding: 10px 12px;
             border-radius: 14px;
             border: 1px solid var(--border);
             background: rgba(255, 255, 255, 0.92);
             color: var(--text);
-            min-width: 260px;
+            min-width: 299px;
+        }
+
+        .stack {
+            display: grid;
+            gap: 8px;
+        }
+
+        .setup-inline {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .setup-field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .setup-action {
+            align-self: flex-end;
+        }
+
+        .checkbox-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: auto;
+            min-width: 0;
+            margin: 0;
+        }
+
+        .category-pool {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px 14px;
+            margin-top: 10px;
+        }
+
+        .category-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 0.8rem 0.95rem;
+            border-radius: 14px;
+            border: 1px solid rgba(24, 34, 48, 0.1);
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .category-item input[type="checkbox"] {
+            width: auto;
+            min-width: 0;
+            margin: 0;
+        }
+
+        .helper {
+            margin-top: 8px;
+            color: var(--muted);
+            line-height: 1.6;
         }
 
         button {
@@ -171,6 +285,14 @@
             flex-wrap: wrap;
         }
 
+        .progress-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 8px;
+        }
+
         .answers {
             display: grid;
             gap: 10px;
@@ -202,9 +324,21 @@
             font-weight: 700;
         }
 
+        .pill.timer {
+            background: rgba(15, 61, 87, 0.12);
+            border-color: rgba(15, 61, 87, 0.22);
+            color: var(--accent);
+        }
+
+        .pill.timer.warning {
+            background: rgba(245, 158, 11, 0.18);
+            border-color: rgba(245, 158, 11, 0.28);
+            color: #9a3412;
+        }
+
         .imggrid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(207px, 1fr));
             gap: 10px;
             margin: 12px 0 0;
         }
@@ -313,8 +447,17 @@
                 align-items: stretch;
             }
 
+            .setup-inline {
+                align-items: stretch;
+            }
+
             select,
-            button {
+            button,
+            input[type="number"] {
+                width: 100%;
+            }
+
+            .setup-action {
                 width: 100%;
             }
         }
@@ -322,6 +465,14 @@
 </head>
 <body>
     <div class="wrap">
+        <nav class="top-links" aria-label="Site pages">
+            <span class="top-links-label">Pages</span>
+            <a class="top-link" href="/">Home</a>
+            <a class="top-link" href="/account.html">Account</a>
+            <a class="top-link" href="/quiz.html">Quiz</a>
+            <a class="top-link" href="/register.html">Register</a>
+            <a class="top-link" href="/result-home.html">Results</a>
+        </nav>
         <div class="eyebrow">The Cert Master</div>
         <h1 id="pageTitle">Quiz Selection</h1>
         <p class="lead" style="margin-top: -0.15rem; color: var(--accent); font-weight: 700;">
@@ -336,28 +487,63 @@
         <div class="card" id="pickerCard">
             <div class="row">
                 <div>
-                    <label for="categorySelect">Category</label><br />
-                    <select id="categorySelect"></select>
-                </div>
-
-                <div>
                     <label for="quizSelect">Choose a quiz</label><br />
                     <select id="quizSelect"></select>
                 </div>
 
-                <div style="margin-top: 18px;">
-                    <button id="btnLoad">Load quiz</button>
-                    <!--<button id="btnRestart" disabled>Restart (re-randomize)</button>-->
+                <div class="stack">
+                    <div class="setup-inline">
+                        <div class="setup-field">
+                            <label for="questionCountInput">How many questions</label>
+                            <input type="number" id="questionCountInput" min="20" step="1" value="20" />
+                        </div>
+
+                        <div class="setup-field">
+                            <label for="timerSelect">Optional timer</label>
+                            <select id="timerSelect">
+                                <option value="">No timer</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">60 minutes</option>
+                                <option value="90">90 minutes</option>
+                                <option value="120">120 minutes</option>
+                            </select>
+                        </div>
+
+                        <div class="setup-action">
+                            <button id="btnLoad">Load quiz</button>
+                            <!--<button id="btnRestart" disabled>Restart (re-randomize)</button>-->
+                        </div>
+                    </div>
+
+                    <label class="checkbox-row" for="allQuestionsCheckbox">
+                        <input type="checkbox" id="allQuestionsCheckbox" checked />
+                        <span>Use all available questions by default</span>
+                    </label>
                 </div>
             </div>
+
+            <div class="category-pool">
+                <label>Category question pool</label>
+                <div class="helper">Select one category to load its quiz. Select more than one category to build a mixed question pool from all selected categories.</div>
+                <div id="categoryCheckboxList" class="category-grid"></div>
+                <div id="categoryPoolSummary" class="helper"></div>
+            </div>
             <div id="status" role="status" aria-live="polite"></div>
+            <div id="guestRegisterPrompt" style="display:none; margin-top: 14px;">
+                <a class="top-link" href="/register.html">Register To Continue</a>
+            </div>
         </div>
 
         <div class="card" id="quizCard" style="display:none;">
             <div class="progress">
                 <div>
                     <div class="muted" id="quizTitle"></div>
-                    <div><span class="pill" id="qCounter">Question</span></div>
+                    <div class="progress-meta">
+                        <span class="pill" id="qCounter">Question</span>
+                        <span class="pill timer" id="timerPill" style="display:none;">Timer</span>
+                    </div>
                 </div>
                 <div class="row">
                     <button id="btnPrev">← Prev</button>
@@ -413,13 +599,48 @@
                     .then(normalizeKeys);
             },
 
-            randomized: (quizId) =>
-                fetch(`/api/quiz/${quizId}/random`)
+            customAvailability: (categories) => {
+                const query = categories.map(c => `categories=${encodeURIComponent(c)}`).join('&');
+                return fetch(`/api/quiz/custom/availability?${query}`, {
+                    headers: buildAuthHeaders()
+                })
                     .then(r => r.ok ? r.json() : Promise.reject(r))
-                    .then(normalizeKeys),
+                    .then(normalizeKeys);
+            },
+
+            randomized: (quizId, questionCount) => {
+                const query = questionCount ? `?questionCount=${encodeURIComponent(questionCount)}` : '';
+                return fetch(`/api/quiz/${quizId}/random${query}`, {
+                    headers: buildAuthHeaders()
+                })
+                    .then(r => r.ok ? r.json() : Promise.reject(r))
+                    .then(normalizeKeys);
+            },
+
+            customRandomized: (categories, questionCount) => {
+                const parts = categories.map(c => `categories=${encodeURIComponent(c)}`);
+                if (questionCount) {
+                    parts.push(`questionCount=${encodeURIComponent(questionCount)}`);
+                }
+
+                return fetch(`/api/quiz/custom/random?${parts.join('&')}`, {
+                    headers: buildAuthHeaders()
+                })
+                    .then(r => r.ok ? r.json() : Promise.reject(r))
+                    .then(normalizeKeys);
+            },
 
             submit: (quizId, payload) =>
                 fetch(`/api/quiz/${quizId}/submit`, {
+                    method: 'POST',
+                    headers: buildJsonHeaders(),
+                    body: JSON.stringify(payload)
+                })
+                    .then(r => r.ok ? r.json() : Promise.reject(r))
+                    .then(normalizeKeys),
+
+            customSubmit: (payload) =>
+                fetch('/api/quiz/custom/submit', {
                     method: 'POST',
                     headers: buildJsonHeaders(),
                     body: JSON.stringify(payload)
@@ -437,18 +658,33 @@
             return headers;
         }
 
+        function buildAuthHeaders() {
+            const headers = {};
+            const token = localStorage.getItem('jwtToken');
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
         const el = (id) => document.getElementById(id);
-        const categorySelect = el('categorySelect');
         const quizSelect = el('quizSelect');
+        const categoryCheckboxList = el('categoryCheckboxList');
+        const categoryPoolSummary = el('categoryPoolSummary');
+        const questionCountInput = el('questionCountInput');
+        const allQuestionsCheckbox = el('allQuestionsCheckbox');
+        const timerSelect = el('timerSelect');
         const pageTitle = el('pageTitle');
         const pickerCard = el('pickerCard');
         const status = el('status');
+        const guestRegisterPrompt = el('guestRegisterPrompt');
         const quizCard = el('quizCard');
         const btnNewQuiz = el('btnNewQuiz');
         const resultCard = el('resultCard');
         const questionArea = el('questionArea');
         const quizTitle = el('quizTitle');
         const qCounter = el('qCounter');
+        const timerPill = el('timerPill');
         const btnLoad = el('btnLoad');
         const btnRestart = el('btnRestart');
         const btnPrev = el('btnPrev');
@@ -462,11 +698,62 @@
         let currentQuizId = null;
         let quizDto = null;
         let index = 0;
+        let activeQuizMode = 'idle';
+        let currentAvailableQuestionCount = 20;
+        let timerEndAt = null;
+        let timerHandle = null;
+        let timerSubmitted = false;
         const selections = new Map(); // Map<QuestionId, Set<AnswerId>>
+        const guestAttemptStorageKey = 'guestQuizAttemptCount';
+        const guestAttemptLimit = 3;
+        const guestQuestionLimit = 5;
 
         function setStatus(msg, tone = "info") {
             status.className = tone === "error" ? "error" : "";
             status.textContent = msg;
+        }
+
+        function updateGuestRegisterCta() {
+            if (guestRegisterPrompt) {
+                guestRegisterPrompt.style.display = guestLimitReached() ? 'block' : 'none';
+            }
+        }
+
+        function isGuestUser() {
+            return !localStorage.getItem('jwtToken');
+        }
+
+        function getGuestAttemptCount() {
+            return parseInt(localStorage.getItem(guestAttemptStorageKey) || '0', 10) || 0;
+        }
+
+        function incrementGuestAttemptCount() {
+            const next = getGuestAttemptCount() + 1;
+            localStorage.setItem(guestAttemptStorageKey, String(next));
+            return next;
+        }
+
+        function guestAttemptsRemaining() {
+            return Math.max(0, guestAttemptLimit - getGuestAttemptCount());
+        }
+
+        function guestLimitReached() {
+            return isGuestUser() && getGuestAttemptCount() >= guestAttemptLimit;
+        }
+
+        function updateGuestStatusNotice() {
+            if (!isGuestUser()) {
+                return;
+            }
+
+            if (guestLimitReached()) {
+                setStatus('Guest access limit reached. Please register to continue taking quizzes.', 'error');
+                updateGuestRegisterCta();
+                return;
+            }
+
+            setStatus(`Guest mode: you can take up to ${guestQuestionLimit} questions per single-category quiz, or ${guestQuestionLimit} questions per selected category in mixed mode, for ${guestAttemptsRemaining()} more attempt(s) before registration is required.`);
+            updateGuestRegisterCta();
         }
 
         function guidFromQuery() {
@@ -488,6 +775,7 @@
             return {
                 quizId: dto.QuizId ?? dto.quizId,
                 title: dto.Title ?? dto.title,
+                totalAvailableQuestions: dto.TotalAvailableQuestions ?? dto.totalAvailableQuestions ?? questionsRaw.length,
                 questions: questionsRaw.map(q => {
                     const answersRaw = q.Answers ?? q.answers ?? [];
                     const imagesRaw = q.Images ?? q.images ?? [];
@@ -508,29 +796,178 @@
             };
         }
 
-        function fillCategorySelect(categories) {
-            categorySelect.innerHTML = '';
+        function syncQuestionCountControls(availableCount) {
+            currentAvailableQuestionCount = Math.max(1, availableCount || 0);
+            const selectedCategories = getSelectedCategories();
+            const multipleCategoryPool = selectedCategories.length > 1;
 
-            const all = document.createElement('option');
-            all.value = 'All';
-            all.textContent = 'All';
-            categorySelect.appendChild(all);
-
-            for (const c of categories) {
-                if (!c || typeof c !== 'string') continue;
-                if (c.toLowerCase() === 'all') continue;
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                categorySelect.appendChild(opt);
+            if (isGuestUser()) {
+                questionCountInput.min = String(guestQuestionLimit);
+                questionCountInput.max = String(guestQuestionLimit);
+                questionCountInput.value = String(guestQuestionLimit);
+                allQuestionsCheckbox.checked = false;
+                allQuestionsCheckbox.disabled = true;
+                return;
             }
+
+            const minimum = currentAvailableQuestionCount >= 20 ? 20 : currentAvailableQuestionCount;
+            const effectiveMaximum = multipleCategoryPool
+                ? 50
+                : currentAvailableQuestionCount;
+
+            questionCountInput.min = String(minimum);
+            questionCountInput.max = String(effectiveMaximum);
+
+            const currentValue = parseInt(questionCountInput.value || '0', 10);
+            if (!currentValue || currentValue < minimum || currentValue > effectiveMaximum) {
+                questionCountInput.value = String(minimum);
+            }
+
+            if (multipleCategoryPool) {
+                allQuestionsCheckbox.checked = false;
+                allQuestionsCheckbox.disabled = true;
+            } else {
+                allQuestionsCheckbox.disabled = false;
+            }
+        }
+
+        function getRequestedQuestionCount() {
+            if (isGuestUser()) {
+                return guestQuestionLimit;
+            }
+
+            if (allQuestionsCheckbox.checked) {
+                return null;
+            }
+
+            const minimum = currentAvailableQuestionCount >= 20 ? 20 : currentAvailableQuestionCount;
+            const maximum = getSelectedCategories().length > 1
+                ? 50
+                : currentAvailableQuestionCount;
+            const requested = parseInt(questionCountInput.value || '0', 10);
+            if (!requested) {
+                return minimum;
+            }
+
+            return Math.max(minimum, Math.min(maximum, requested));
+        }
+
+        async function updateQuizPickerForSingleCategory(category) {
+            try {
+                const quizzes = normalizeQuizList(await api.listQuizzes(category));
+                fillQuizSelect(quizzes);
+
+                if (quizzes.length === 1) {
+                    quizSelect.value = quizzes[0].id;
+                    quizSelect.disabled = true;
+
+                    try {
+                        const raw = await api.randomized(quizzes[0].id);
+                        const normalized = normalizeQuiz(raw);
+                        syncQuestionCountControls(normalized.totalAvailableQuestions || normalized.questions.length);
+                    } catch {
+                        syncQuestionCountControls(20);
+                    }
+                } else {
+                    quizSelect.disabled = quizzes.length === 0;
+                    syncQuestionCountControls(20);
+                }
+
+                return quizzes;
+            } catch {
+                fillQuizSelect([]);
+                quizSelect.disabled = true;
+                syncQuestionCountControls(20);
+                return [];
+            }
+        }
+
+        async function updateCategoryPoolState() {
+            const selectedCategories = getSelectedCategories();
+
+            if (selectedCategories.length === 0) {
+                activeQuizMode = 'idle';
+                categoryPoolSummary.textContent = 'Select a category to load its quiz, or select multiple categories to build a mixed question pool.';
+                fillQuizSelect([]);
+                quizSelect.disabled = true;
+                syncQuestionCountControls(20);
+                return;
+            }
+
+            if (selectedCategories.length === 1) {
+                activeQuizMode = 'single';
+                const quizzes = await updateQuizPickerForSingleCategory(selectedCategories[0]);
+
+                if (quizzes.length === 0) {
+                    categoryPoolSummary.textContent =
+                        `Category pool mode is active for ${selectedCategories[0]}, but there are no quizzes available in that category right now.`;
+                } else if (quizzes.length === 1) {
+                    categoryPoolSummary.textContent =
+                        `Category pool mode is active for ${selectedCategories[0]}. The only quiz in this category has been selected automatically.${isGuestUser() ? ' Guest users are limited to 5 questions for this quiz and 3 total attempts.' : ''}`;
+                } else {
+                    categoryPoolSummary.textContent =
+                        `Category pool mode is active for ${selectedCategories[0]}. Choose one of the ${quizzes.length} quizzes in this category.${isGuestUser() ? ' Guest users are limited to 5 questions for this quiz and 3 total attempts.' : ''}`;
+                }
+
+                return;
+            }
+
+            activeQuizMode = 'custom';
+            fillQuizSelect([]);
+            quizSelect.disabled = true;
+
+            try {
+                const availability = await api.customAvailability(selectedCategories);
+                const totalAvailable = availability.totalAvailableQuestions || 0;
+                syncQuestionCountControls(totalAvailable);
+
+                const counts = Object.entries(availability.categoryQuestionCounts || {})
+                    .map(([category, count]) => `${category}: ${count}`)
+                    .join(' · ');
+
+                if (selectedCategories.length > 1) {
+                    categoryPoolSummary.textContent =
+                        isGuestUser()
+                            ? `Mixed category mode is active. Guest users receive ${guestQuestionLimit} questions from each selected category, with ${guestAttemptLimit} total attempts before registration is required. ${counts}`
+                            : `Mixed category mode is active. The How many questions field is a per-category amount from 20 to 50. Your total question pool is that number multiplied by the number of selected categories, and that amount is pulled from each selected category based on availability. ${counts}`;
+                }
+            } catch {
+                categoryPoolSummary.textContent = 'Could not load category pool details right now.';
+                syncQuestionCountControls(20);
+            }
+        }
+
+        function renderCategoryCheckboxes(categories) {
+            categoryCheckboxList.innerHTML = '';
+
+            for (const category of categories) {
+                const normalizedCategory = String(category || '').trim().toLowerCase();
+                if (!category || normalizedCategory === 'all' || normalizedCategory === 'uncategorized') continue;
+
+                const item = document.createElement('label');
+                item.className = 'category-item';
+                item.innerHTML = `
+                    <input type="checkbox" value="${escapeHtml(category)}" />
+                    <span>${escapeHtml(category)}</span>
+                `;
+                categoryCheckboxList.appendChild(item);
+            }
+        }
+
+        function getSelectedCategories() {
+            return Array.from(categoryCheckboxList.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(input => input.value);
+        }
+
+        function isCategoryPoolMode() {
+            return getSelectedCategories().length > 0;
         }
 
         function fillQuizSelect(quizzes) {
             quizSelect.innerHTML = '';
             const opt0 = document.createElement('option');
             opt0.value = '';
-            opt0.textContent = '— select —';
+            opt0.textContent = quizzes.length <= 1 ? 'Only quiz available' : '— select —';
             quizSelect.appendChild(opt0);
 
             for (const q of quizzes) {
@@ -617,31 +1054,95 @@
             btnNext.disabled = index === quizDto.questions.length - 1;
         }
 
+        function formatRemainingTime(msRemaining) {
+            const totalSeconds = Math.max(0, Math.ceil(msRemaining / 1000));
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function stopTimer() {
+            if (timerHandle) {
+                clearInterval(timerHandle);
+                timerHandle = null;
+            }
+
+            timerEndAt = null;
+            timerSubmitted = false;
+            timerPill.style.display = 'none';
+            timerPill.className = 'pill timer';
+        }
+
+        function updateTimerPill() {
+            if (!timerEndAt) {
+                timerPill.style.display = 'none';
+                return;
+            }
+
+            const remaining = timerEndAt - Date.now();
+            timerPill.style.display = 'inline-block';
+            timerPill.textContent = `Time left ${formatRemainingTime(remaining)}`;
+            timerPill.className = remaining <= 5 * 60 * 1000 ? 'pill timer warning' : 'pill timer';
+
+            if (remaining <= 0 && !timerSubmitted) {
+                timerSubmitted = true;
+                stopTimer();
+                setStatus('Time is up. Submitting your quiz...');
+                submitQuiz();
+            }
+        }
+
+        function startTimer(minutes) {
+            stopTimer();
+
+            if (!minutes || minutes <= 0) {
+                return;
+            }
+
+            timerEndAt = Date.now() + minutes * 60 * 1000;
+            updateTimerPill();
+            timerHandle = window.setInterval(updateTimerPill, 1000);
+        }
+
         async function loadQuiz(quizId) {
+            if (guestLimitReached()) {
+                setStatus('Guest access limit reached. Please register before starting another quiz.', 'error');
+                return;
+            }
+
             setStatus('Loading quiz…');
             resultCard.style.display = 'none';
             perQuestion.innerHTML = '';
             selections.clear();
             index = 0;
+            stopTimer();
 
             try {
-                const raw = await api.randomized(quizId);
+                const selectedQuestionCount = getRequestedQuestionCount();
+                const timerMinutes = parseInt(timerSelect.value || '0', 10);
+                const raw = activeQuizMode === 'custom'
+                    ? await api.customRandomized(getSelectedCategories(), selectedQuestionCount)
+                    : await api.randomized(quizId, selectedQuestionCount);
                 quizDto = normalizeQuiz(raw);
-                currentQuizId = quizId;
+                currentQuizId = activeQuizMode === 'custom' ? null : quizId;
+                currentAvailableQuestionCount = quizDto.totalAvailableQuestions || quizDto.questions.length;
                 if (pickerCard) pickerCard.style.display = 'none';
                 quizCard.style.display = 'block';
                 btnRestart.disabled = false;
                 btnNewQuiz.disabled = true;
                 renderQuestion();
+                startTimer(timerMinutes);
                 setStatus('');
             } catch (e) {
                 quizCard.style.display = 'none';
                 btnRestart.disabled = true;
+                stopTimer();
                 setStatus('Could not load quiz. Choose a quiz from the list and make sure it still exists.', 'error');
             }
         }
 
         function buildSubmitPayload() {
+            const deliveredQuestionIds = (quizDto.questions || []).map(q => q.id);
             const answers = (quizDto.questions || []).map(q => {
                 const set = ensureSet(q.id);
                 return {
@@ -649,16 +1150,24 @@
                     SelectedAnswerIds: Array.from(set)
                 };
             });
-            return { Answers: answers };
+            return {
+                QuizTitle: quizDto?.title || '',
+                SelectedCategories: getSelectedCategories(),
+                DeliveredQuestionIds: deliveredQuestionIds,
+                Answers: answers
+            };
         }
 
         async function submitQuiz() {
-            if (!currentQuizId || !quizDto) return;
+            if (!quizDto) return;
 
             setStatus('Submitting attempt…');
+            stopTimer();
             try {
                 const payload = buildSubmitPayload();
-                const res = await api.submit(currentQuizId, payload);
+                const res = activeQuizMode === 'custom'
+                    ? await api.customSubmit(payload)
+                    : await api.submit(currentQuizId, payload);
 
                 const pct = res.ScorePercent ?? res.scorePercent ?? 0;
                 const cc = res.CorrectCount ?? res.correctCount ?? 0;
@@ -696,7 +1205,7 @@
                 btnNewQuiz.disabled = false;
                 btnHome.disabled = false;
                 sessionStorage.setItem('latestQuizResult', JSON.stringify({
-                    quizId: currentQuizId,
+                    quizId: currentQuizId || 'custom',
                     quizTitle: quizDto?.title || 'Quiz',
                     scorePercent: pct,
                     correctCount: cc,
@@ -704,24 +1213,45 @@
                     passed,
                     submittedUtc: new Date().toISOString()
                 }));
-                setStatus('');
+                if (isGuestUser()) {
+                    const guestAttempts = incrementGuestAttemptCount();
+                    if (guestAttempts >= guestAttemptLimit) {
+                        setStatus('You have used all 3 guest attempts. Please register to continue taking quizzes.', 'error');
+                    } else {
+                        setStatus(`Guest attempt ${guestAttempts} of ${guestAttemptLimit} used. Register for full access, or continue while you still have ${guestAttemptLimit - guestAttempts} attempt(s) left.`);
+                    }
+                    updateGuestRegisterCta();
+                } else {
+                    setStatus('');
+                    updateGuestRegisterCta();
+                }
             } catch (e) {
                 setStatus('Submit failed. Check the API response and server logs.', 'error');
             }
         }
 
-        async function refreshQuizListForCategory() {
-            try {
-                const selectedCategory = categorySelect.value || 'All';
-                const quizzes = normalizeQuizList(await api.listQuizzes(selectedCategory));
-                fillQuizSelect(quizzes);
-            } catch {
-                fillQuizSelect([]);
-            }
-        }
-
         // UI wiring
         btnLoad.addEventListener('click', () => {
+            if (guestLimitReached()) {
+                setStatus('Guest access limit reached. Please register before loading another quiz.', 'error');
+                return;
+            }
+
+            if (activeQuizMode === 'custom') {
+                if (getSelectedCategories().length === 0) {
+                    setStatus('Select at least one category to build a mixed question pool.', 'error');
+                    return;
+                }
+
+                loadQuiz(null);
+                return;
+            }
+
+            if (activeQuizMode !== 'single') {
+                setStatus('Select one category before loading a quiz.', 'error');
+                return;
+            }
+
             const id = getSelectedQuizId();
             if (!id) {
                 setStatus('Pick a quiz from the dropdown before loading.', 'error');
@@ -731,7 +1261,7 @@
         });
 
         btnRestart.addEventListener('click', () => {
-            if (!currentQuizId) return;
+            if (activeQuizMode !== 'custom' && !currentQuizId) return;
             loadQuiz(currentQuizId);
         });
 
@@ -755,11 +1285,13 @@
             quizDto = null;
             index = 0;
             selections.clear();
+            stopTimer();
             if (pageTitle) pageTitle.textContent = 'Quiz Selection';
 
             // Hide quiz + results
             quizCard.style.display = 'none';
             resultCard.style.display = 'none';
+            updateGuestRegisterCta();
 
             // Show quiz picker again
             if (pickerCard) pickerCard.style.display = 'block';
@@ -775,8 +1307,50 @@
             window.location.assign('/result-home.html');
         });
 
-        categorySelect.addEventListener('change', () => {
-            refreshQuizListForCategory();
+        categoryCheckboxList.addEventListener('change', async () => {
+            await updateCategoryPoolState();
+        });
+
+        quizSelect.addEventListener('change', async () => {
+            const selectedQuizId = getSelectedQuizId();
+            if (!selectedQuizId) {
+                syncQuestionCountControls(20);
+                return;
+            }
+
+            try {
+                const raw = await api.randomized(selectedQuizId);
+                const normalized = normalizeQuiz(raw);
+                syncQuestionCountControls(normalized.totalAvailableQuestions || normalized.questions.length);
+            } catch {
+                syncQuestionCountControls(20);
+            }
+        });
+
+        allQuestionsCheckbox.addEventListener('change', () => {
+            if (allQuestionsCheckbox.checked) {
+                const minimum = currentAvailableQuestionCount >= 20 ? 20 : currentAvailableQuestionCount;
+                questionCountInput.value = String(Math.max(minimum, currentAvailableQuestionCount));
+            }
+            syncQuestionCountControls(currentAvailableQuestionCount);
+        });
+
+        questionCountInput.addEventListener('input', () => {
+            if (allQuestionsCheckbox.checked) {
+                allQuestionsCheckbox.checked = false;
+            }
+        });
+
+        questionCountInput.addEventListener('change', () => {
+            const minimum = currentAvailableQuestionCount >= 20 ? 20 : currentAvailableQuestionCount;
+            const maximum = getSelectedCategories().length > 1
+                ? 50
+                : currentAvailableQuestionCount;
+            const requested = parseInt(questionCountInput.value || '0', 10);
+            const normalizedValue = !requested
+                ? minimum
+                : Math.max(minimum, Math.min(maximum, requested));
+            questionCountInput.value = String(normalizedValue);
         });
 
         // Init
@@ -788,10 +1362,19 @@
                 } catch {
                     categories = [];
                 }
-                fillCategorySelect(Array.isArray(categories) ? categories : []);
-                await refreshQuizListForCategory();
+                renderCategoryCheckboxes(Array.isArray(categories) ? categories : []);
+                fillQuizSelect([]);
+                quizSelect.disabled = true;
+                syncQuestionCountControls(20);
+                await updateCategoryPoolState();
+                updateGuestStatusNotice();
             } catch {
                 fillQuizSelect([]);
+                renderCategoryCheckboxes([]);
+                quizSelect.disabled = true;
+                syncQuestionCountControls(20);
+                await updateCategoryPoolState();
+                updateGuestStatusNotice();
             }
 
             const qid = guidFromQuery();

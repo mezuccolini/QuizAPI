@@ -14,6 +14,7 @@ This repository is the active source-of-truth application for the project.
 - uploaded file management
 - admin user management
 - SMTP configuration and email test endpoints
+- rate limiting for public auth flows and quiz loading
 - browser-based pages for public access, account management, quiz running, and admin upload/import work
 
 ## Tech Stack
@@ -51,6 +52,7 @@ By default, development uses:
 
 - environment: `Development`
 - database: `DevQuizDB`
+- SQL Server connection: local `.\SQLEXPRESS` with `Encrypt=True` and `TrustServerCertificate=True`
 - base URL: `http://localhost:5185`
 - HTTPS URL: `https://localhost:7193`
 
@@ -111,7 +113,7 @@ This package is intended as a demo/template import example and includes:
 
 Typical usage:
 
-1. Open [upload.html](wwwroot/upload.html)
+1. Open [manage.html](wwwroot/manage.html)
 2. Log in as an admin
 3. Upload the ZIP package
 4. Import the extracted CSV file shown by the upload result
@@ -134,7 +136,7 @@ Quick summary:
 - [register.html](wwwroot/register.html): public user registration page with email verification flow
 - [verify-email.html](wwwroot/verify-email.html): email confirmation landing page
 - [account.html](wwwroot/account.html): signed-in user account page with password change and quiz history
-- [upload.html](wwwroot/upload.html): admin dashboard for login, file upload, imports, user management, SMTP settings
+- [manage.html](wwwroot/manage.html): admin dashboard for login, file upload, imports, user management, SMTP settings
 - [quiz.html](wwwroot/quiz.html): quiz runner UI
 - [result-home.html](wwwroot/result-home.html): most recent submitted quiz result page with pass/fail summary and a direct path back to quiz selection
 
@@ -194,6 +196,25 @@ Important configuration keys:
 - `DevAdmin:Email`
 - `DevAdmin:Password`
 - `SampleData:Enabled`
+- `RateLimiting:AuthAttemptsPerMinute`
+- `RateLimiting:GuestQuizLoadsPerMinute`
+- `RateLimiting:AuthenticatedQuizLoadsPerMinute`
+
+## Security Hardening
+
+The current application includes a few intentional hardening layers:
+
+- public registration, login, resend-verification, and password reset are rate-limited
+- quiz loading is rate-limited, with stricter limits for guest users than signed-in users
+- the admin dashboard restores only verified admin sessions and clears stale or unauthorized tokens automatically
+- user profile name fields accept letters and spaces only
+
+Text-input validation notes:
+
+- first name, last name, and SMTP `From Name` are normalized to plain letters and spaces
+- passwords and email addresses keep their normal required character flexibility
+- technical configuration fields such as SMTP hostnames/usernames remain unrestricted where punctuation is required
+- imported quiz content is intentionally not reduced to plain-text-only because question and answer content often needs punctuation and symbols
 
 For production-like deployments, prefer environment variables or secret storage for:
 

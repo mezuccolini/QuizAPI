@@ -50,8 +50,50 @@
 
         main {
             position: relative;
-            width: min(1120px, calc(100vw - 2rem));
+            width: min(1481px, calc(100vw - 2rem));
             margin: 0 auto;
+        }
+
+        .top-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            padding: 0.95rem 1rem;
+            background: rgba(255, 252, 247, 0.78);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 18px 36px rgba(24, 34, 48, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .top-links-label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-right: 0.2rem;
+        }
+
+        .top-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(24, 34, 48, 0.12);
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .top-link:hover {
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(15, 61, 87, 0.24);
         }
 
         main::before,
@@ -135,7 +177,7 @@
 
         .hero-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.95fr);
+            grid-template-columns: minmax(0, 1.4fr) minmax(322px, 1.09fr);
             gap: 1.5rem;
             align-items: start;
         }
@@ -192,7 +234,7 @@
         }
 
         input, select {
-            min-width: 220px;
+            min-width: 253px;
             background: rgba(255, 255, 255, 0.9);
             color: var(--text);
         }
@@ -331,6 +373,16 @@
 </head>
 <body>
     <main>
+    <nav class="top-links" aria-label="Site pages">
+        <span class="top-links-label">Pages</span>
+        <a class="top-link" href="/">Home</a>
+        <a class="top-link" href="/account.html">Account</a>
+        <a class="top-link" href="/quiz.html">Quiz</a>
+        <a class="top-link" href="/register.html">Register</a>
+        <a class="top-link" href="/result-home.html">Results</a>
+        <a class="top-link" href="/manage.html">Manage</a>
+        <a class="top-link" href="/verify-email.html">Verify Email</a>
+    </nav>
     <section class="hero">
         <div class="hero-grid">
             <div class="hero-copy">
@@ -401,7 +453,10 @@
     <!-- OK Keep this div OUTSIDE #status -->
     <div id="userManager" style="display:none;">
         <h3>User Management</h3>
+        <div class="muted" style="margin-bottom:10px;">Create users with profile names, edit names inline, reset a password immediately, or email a password-reset link.</div>
         <form id="createUserForm">
+            <input type="text" id="newUserFirstName" class="plain-text-input" maxlength="50" pattern="[A-Za-z ]*" title="Use letters and spaces only." placeholder="First name" />
+            <input type="text" id="newUserLastName" class="plain-text-input" maxlength="50" pattern="[A-Za-z ]*" title="Use letters and spaces only." placeholder="Last name" />
             <input type="email" id="newUserEmail" placeholder="New user email" required />
             <input type="password" id="newUserPassword" placeholder="Password" required />
             <select id="newUserRole">
@@ -413,7 +468,7 @@
 
         <table>
             <thead>
-                <tr><th>Email</th><th>Role</th><th>Actions</th></tr>
+                <tr><th>Email</th><th>First Name</th><th>Last Name</th><th>Role</th><th>Actions</th></tr>
             </thead>
             <tbody id="userList"></tbody>
         </table>
@@ -438,7 +493,7 @@
                 </div>
                 <div>
                     <label>From Name</label><br/>
-                    <input type="text" id="smtpFromName" placeholder="QuizAPI" />
+                    <input type="text" id="smtpFromName" class="plain-text-input" maxlength="50" pattern="[A-Za-z ]*" title="Use letters and spaces only." placeholder="QuizAPI" />
                 </div>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; align-items:flex-end;">
@@ -458,7 +513,7 @@
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; align-items:center;">
                 <button type="submit">Save SMTP</button>
                 <button type="button" id="smtpReloadBtn">Reload</button>
-                <input type="email" id="smtpTestTo" placeholder="Test email recipient" style="min-width:260px;" />
+                <input type="email" id="smtpTestTo" placeholder="Test email recipient" style="min-width:299px;" />
                 <button type="button" id="smtpTestBtn">Send Test</button>
                 <span class="muted status-inline" id="smtpStatus"></span>
             </div>
@@ -508,21 +563,150 @@ const loginForm = document.getElementById("loginForm");
             return escapeHtml(str).replace(/`/g, "&#96;");
         }
 
+        function toDomKey(value) {
+            return encodeURIComponent(String(value ?? "")).replace(/%/g, "_");
+        }
+
+        function normalizePlainText(value) {
+            return String(value ?? "")
+                .replace(/[^A-Za-z ]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function bindPlainTextInput(input) {
+            if (!input || input.dataset.plainTextBound === "true") {
+                return;
+            }
+
+            input.dataset.plainTextBound = "true";
+            input.addEventListener("input", () => {
+                const normalized = normalizePlainText(input.value);
+                if (input.value !== normalized) {
+                    input.value = normalized;
+                }
+            });
+        }
+
+        function bindPlainTextInputs(root = document) {
+            root.querySelectorAll(".plain-text-input").forEach(bindPlainTextInput);
+        }
+
+        function validateOptionalPlainText(value, label) {
+            const normalized = normalizePlainText(value);
+            if (!normalized) {
+                return { normalized: "", error: "" };
+            }
+
+            if (!/^[A-Za-z]+(?: [A-Za-z]+)*$/.test(normalized)) {
+                return { normalized, error: `${label} can only contain letters and spaces.` };
+            }
+
+            return { normalized, error: "" };
+        }
+
         async function readErrorResponse(res) {
             const text = await res.text();
-            if (!text) return `Request failed with status ${res.status}.`;
-
-            try {
-                const parsed = JSON.parse(text);
-                return parsed.detail || parsed.title || parsed.message || text;
-            } catch {
-                return text;
-            }
+            return parseApiMessage(text, res.status, `Request failed with status ${res.status}.`);
         }
 
         function setStatus(message, tone = "info") {
             statusBox.className = tone && tone !== "info" ? tone : "";
             statusBox.textContent = message;
+        }
+
+        function showAdminTools() {
+            loginForm.style.display = "none";
+            uploadForm.style.display = "block";
+            fileTable.style.display = "block";
+            userManager.style.display = "block";
+            smtpSettings.style.display = "block";
+        }
+
+        function hideAdminTools() {
+            uploadForm.style.display = "none";
+            fileTable.style.display = "none";
+            userManager.style.display = "none";
+            smtpSettings.style.display = "none";
+            userList.innerHTML = "";
+        }
+
+        function clearAdminSession(message, tone = "error") {
+            token = null;
+            localStorage.removeItem("jwtToken");
+            hideAdminTools();
+            loginForm.style.display = "block";
+            setStatus(message, tone);
+        }
+
+        async function fetchWithAdminAuth(url, options = {}) {
+            if (!token) {
+                clearAdminSession("Please sign in with an admin account to continue.");
+                throw new Error("Admin sign-in required.");
+            }
+
+            const headers = new Headers(options.headers || {});
+            headers.set("Authorization", `Bearer ${token}`);
+
+            const res = await fetch(url, { ...options, headers });
+            if (res.status === 401) {
+                clearAdminSession("Your admin session has expired. Please sign in again.");
+                throw new Error("Your admin session has expired.");
+            }
+
+            if (res.status === 403) {
+                clearAdminSession("Your account does not have permission to use the admin dashboard.");
+                throw new Error("Admin access is required.");
+            }
+
+            return res;
+        }
+
+        async function restoreAdminSession(successMessage = "Session restored. Admin tools are ready.") {
+            token = localStorage.getItem("jwtToken");
+            if (!token) {
+                hideAdminTools();
+                loginForm.style.display = "block";
+                return false;
+            }
+
+            try {
+                const res = await fetch("/api/account/me", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (res.status === 401) {
+                    clearAdminSession("Your saved admin session has expired. Please sign in again.");
+                    return false;
+                }
+
+                if (!res.ok) {
+                    clearAdminSession(parseApiMessage(await res.text(), res.status, "Unable to restore the admin session."));
+                    return false;
+                }
+
+                const profile = await res.json();
+                const role = profile.Role || profile.role || "";
+                if (role !== "Admin") {
+                    clearAdminSession("This account is signed in, but it does not have admin access.");
+                    return false;
+                }
+
+                showAdminTools();
+                setStatus(successMessage, "success");
+                await Promise.all([
+                    loadFiles(),
+                    loadUsers(),
+                    loadSmtpSettings(),
+                    loadQuizCategories(),
+                    loadQuizzes(),
+                    loadImportHistory()
+                ]);
+                return true;
+            } catch (err) {
+                clearAdminSession("Unable to restore the admin session right now.");
+                return false;
+            }
         }
 
         function setSmtpStatus(message, tone = "info") {
@@ -559,19 +743,30 @@ const loginForm = document.getElementById("loginForm");
         }
 
 
-        // Rehydrate session
-        if (token) {
-            loginForm.style.display = "none";
-            uploadForm.style.display = "block";
-            fileTable.style.display = "block";
-            userManager.style.display = "block";
-            smtpSettings.style.display = "block";
-            loadFiles();
-            loadUsers();
-            loadSmtpSettings();
-            loadQuizzes();
-            loadImportHistory();
-            setStatus("Logged in as Admin.", "success");
+        bindPlainTextInputs();
+
+        function parseApiMessage(text, status, fallbackMessage) {
+            if (!text) {
+                if (status === 401) return "Your session has expired. Please sign in again.";
+                if (status === 403) return "Admin access is required for this action.";
+                if (status === 429) return "Too many requests were sent. Please wait a moment and try again.";
+                return fallbackMessage || `Request failed with status ${status}.`;
+            }
+
+            try {
+                const parsed = JSON.parse(text);
+                if (typeof parsed === "string" && parsed.trim()) return parsed.trim();
+                if (Array.isArray(parsed)) {
+                    const messages = parsed
+                        .map(item => item?.description || item?.Description || item?.message || item?.Message)
+                        .filter(Boolean);
+                    if (messages.length) return messages.join("; ");
+                }
+
+                return parsed.detail || parsed.title || parsed.message || parsed.Message || text;
+            } catch {
+                return text;
+            }
         }
 
         // Login
@@ -589,27 +784,17 @@ const loginForm = document.getElementById("loginForm");
                 });
 
                 if (!res.ok) {
-                    setStatus("Login failed. Check your email, password, and account lockout state.", "error");
+                    const message = parseApiMessage(await res.text(), res.status, "Sign-in failed.");
+                    setStatus(message, "error");
                     return;
                 }
 
                 const data = await res.json();
                 token = data.token;
                 localStorage.setItem("jwtToken", token);
-
-                setStatus("Login successful. Admin tools are now available.", "success");
-                loginForm.style.display = "none";
-                uploadForm.style.display = "block";
-                fileTable.style.display = "block";
-                userManager.style.display = "block";
-                smtpSettings.style.display = "block";
-                loadFiles();
-                loadSmtpSettings();
-                loadUsers();
-                loadQuizzes();
-                loadImportHistory();
+                await restoreAdminSession("Login successful. Admin tools are now available.");
             } catch (err) {
-                setStatus("Login error: " + err.message, "error");
+                setStatus(err.message || "Unable to sign in right now.", "error");
             }
         });
 
@@ -627,12 +812,10 @@ const loginForm = document.getElementById("loginForm");
             const uploadUrl = isZip ? "/api/import/upload-package" : "/api/import/upload";
 
             try {
-                const res = await fetch(uploadUrl, {
+                const res = await fetchWithAdminAuth(uploadUrl, {
                     method: "POST",
-                    headers: { "Authorization": `Bearer ${token}` },
                     body: formData
                 });
-
                 if (res.ok) {
                     if (isZip) {
                         const data = await res.json();
@@ -664,9 +847,7 @@ const loginForm = document.getElementById("loginForm");
         // Load files
         async function loadFiles() {
             try {
-                const res = await fetch("/api/files", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
+                const res = await fetchWithAdminAuth("/api/files");
                 const files = await res.json();
                 fileList.innerHTML = "";
                 if (!files.length) {
@@ -710,9 +891,8 @@ const loginForm = document.getElementById("loginForm");
 
             if (!confirm(`Import ${name} into database?`)) return;
             setStatus(`Importing ${name}...`);
-            const res = await fetch(`/api/import/process/${encodeURIComponent(name)}`, {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` }
+            const res = await fetchWithAdminAuth(`/api/import/process/${encodeURIComponent(name)}`, {
+                method: "POST"
             });
             if (res.ok) {
                 const text = await res.text();
@@ -728,9 +908,8 @@ const loginForm = document.getElementById("loginForm");
         async function deleteFile(name) {
             if (!confirm(`Delete ${name}?`)) return;
             setStatus(`Deleting ${name}...`);
-            const res = await fetch(`/api/files/${encodeURIComponent(name)}`, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
+            const res = await fetchWithAdminAuth(`/api/files/${encodeURIComponent(name)}`, {
+                method: "DELETE"
             });
             const text = await res.text();
             if (res.ok) {
@@ -744,27 +923,73 @@ const loginForm = document.getElementById("loginForm");
         // User management
         async function loadUsers() {
             try {
-                const res = await fetch("/api/users", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
+                const res = await fetchWithAdminAuth("/api/users");
                 if (!res.ok) return;
                 const users = await res.json();
                 userList.innerHTML = "";
                 for (const u of users) {
+                    const email = u.email ?? "";
+                    const domKey = toDomKey(email);
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                <td>${u.email}</td>
-                <td>${u.role ?? "(unknown)"}</td>
+                <td>${escapeHtml(email)}</td>
+                <td><input type="text" class="plain-text-input" maxlength="50" pattern="[A-Za-z ]*" title="Use letters and spaces only." id="firstName_${domKey}" value="${escapeHtmlAttr(u.firstName ?? "")}" placeholder="First name" /></td>
+                <td><input type="text" class="plain-text-input" maxlength="50" pattern="[A-Za-z ]*" title="Use letters and spaces only." id="lastName_${domKey}" value="${escapeHtmlAttr(u.lastName ?? "")}" placeholder="Last name" /></td>
+                <td>${escapeHtml(u.role ?? "(unknown)")}</td>
                 <td>
-                  <button onclick="makeAdmin('${u.email}')">Make Admin</button>
-                  <button onclick="makeUser('${u.email}')">Make User</button>
-                  <button onclick="resetPasswordPrompt('${u.email}')">Reset Password</button>
-                  <button class="danger" onclick="deleteUser('${u.email}')">Delete</button>
+                  <button onclick="saveUserProfile('${escapeHtmlAttr(email)}')">Save</button>
+                  <button onclick="makeAdmin('${escapeHtmlAttr(email)}')">Make Admin</button>
+                  <button onclick="makeUser('${escapeHtmlAttr(email)}')">Make User</button>
+                  <button onclick="resetPasswordPrompt('${escapeHtmlAttr(email)}')">Reset Password</button>
+                  <button onclick="sendResetLink('${escapeHtmlAttr(email)}')">Email Reset Link</button>
+                  <button class="danger" onclick="deleteUser('${escapeHtmlAttr(email)}')">Delete</button>
                 </td>
               `;
                     userList.appendChild(row);
+                    bindPlainTextInputs(row);
                 }
             } catch (err) { console.error(err); }
+        }
+
+        async function saveUserProfile(email) {
+            const domKey = toDomKey(email);
+            const firstNameInput = document.getElementById(`firstName_${domKey}`);
+            const lastNameInput = document.getElementById(`lastName_${domKey}`);
+            const firstNameResult = validateOptionalPlainText(firstNameInput?.value ?? "", "First name");
+            const lastNameResult = validateOptionalPlainText(lastNameInput?.value ?? "", "Last name");
+
+            if (firstNameResult.error) {
+                setStatus(firstNameResult.error, "error");
+                return;
+            }
+
+            if (lastNameResult.error) {
+                setStatus(lastNameResult.error, "error");
+                return;
+            }
+
+            if (firstNameInput) firstNameInput.value = firstNameResult.normalized;
+            if (lastNameInput) lastNameInput.value = lastNameResult.normalized;
+
+            const res = await fetchWithAdminAuth(`/api/users/${encodeURIComponent(email)}/profile`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email,
+                    firstName: firstNameResult.normalized,
+                    lastName: lastNameResult.normalized
+                })
+            });
+
+            const text = await res.text();
+            if (res.ok) {
+                setStatus(text, "success");
+                loadUsers();
+            } else {
+                setStatus(parseApiMessage(text, res.status, "Unable to update this profile."), "error");
+            }
         }
 
 
@@ -773,11 +998,9 @@ const loginForm = document.getElementById("loginForm");
             if (!token) return;
             try {
                 setSmtpStatus('Loading settings...');
-                const res = await fetch('/api/admin/smtp', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetchWithAdminAuth('/api/admin/smtp');
                 if (!res.ok) {
-                    const t = await res.text();
+                    const t = await readErrorResponse(res);
                     setSmtpStatus('Failed to load SMTP: ' + t, 'error');
                     return;
                 }
@@ -812,16 +1035,15 @@ const loginForm = document.getElementById("loginForm");
                     fromEmail: smtpFromEmail.value.trim(),
                     fromName: smtpFromName.value.trim() || 'QuizAPI'
                 };
-                const res = await fetch('/api/admin/smtp', {
+                const res = await fetchWithAdminAuth('/api/admin/smtp', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });
                 if (!res.ok) {
-                    const t = await res.text();
+                    const t = await readErrorResponse(res);
                     setSmtpStatus('Save failed: ' + t, 'error');
                     return;
                 }
@@ -843,16 +1065,15 @@ const loginForm = document.getElementById("loginForm");
             }
             try {
                 setSmtpStatus('Sending test email...');
-                const res = await fetch('/api/admin/smtp/test', {
+                const res = await fetchWithAdminAuth('/api/admin/smtp/test', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ toEmail: to })
                 });
                 if (!res.ok) {
-                    const t = await res.text();
+                    const t = await readErrorResponse(res);
                     setSmtpStatus('Test failed: ' + t, 'error');
                     return;
                 }
@@ -874,16 +1095,29 @@ const loginForm = document.getElementById("loginForm");
 
         document.getElementById("createUserForm").addEventListener("submit", async (e) => {
             e.preventDefault();
+            const firstNameResult = validateOptionalPlainText(document.getElementById("newUserFirstName").value, "First name");
+            const lastNameResult = validateOptionalPlainText(document.getElementById("newUserLastName").value, "Last name");
+            if (firstNameResult.error) {
+                setStatus(firstNameResult.error, "error");
+                return;
+            }
+            if (lastNameResult.error) {
+                setStatus(lastNameResult.error, "error");
+                return;
+            }
+            document.getElementById("newUserFirstName").value = firstNameResult.normalized;
+            document.getElementById("newUserLastName").value = lastNameResult.normalized;
+            const firstName = firstNameResult.normalized;
+            const lastName = lastNameResult.normalized;
             const email = document.getElementById("newUserEmail").value;
             const password = document.getElementById("newUserPassword").value;
             const role = document.getElementById("newUserRole").value;
-            const res = await fetch("/api/users", {
+            const res = await fetchWithAdminAuth("/api/users", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ email, password, role })
+                body: JSON.stringify({ firstName, lastName, email, password, role })
             });
 
         
@@ -891,9 +1125,10 @@ const loginForm = document.getElementById("loginForm");
             const text = await res.text();
             if (res.ok) {
                 setStatus(text, "success");
+                document.getElementById("createUserForm").reset();
                 loadUsers();
             } else {
-                setStatus(text, "error");
+                setStatus(parseApiMessage(text, res.status, "Unable to create this user."), "error");
             }
         });
 
@@ -901,28 +1136,26 @@ const loginForm = document.getElementById("loginForm");
         async function makeUser(email) { await updateRole(email, "User"); }
 
         async function updateRole(email, role) {
-            const res = await fetch(`/api/users/${encodeURIComponent(email)}/role`, {
+            const res = await fetchWithAdminAuth(`/api/users/${encodeURIComponent(email)}/role`, {
                 method: "PUT",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ role })
             });
             const text = await res.text();
             if (res.ok) { setStatus(text, "success"); loadUsers(); }
-            else { setStatus(text, "error"); }
+            else { setStatus(parseApiMessage(text, res.status, "Unable to update this role."), "error"); }
         }
 
         async function resetPasswordPrompt(email) {
             const newPassword = prompt(`Enter a new password for ${email}:`);
             if (!newPassword) return;
 
-            const res = await fetch(`/api/users/${encodeURIComponent(email)}/reset-password`, {
+            const res = await fetchWithAdminAuth(`/api/users/${encodeURIComponent(email)}/reset-password`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ newPassword })
             });
@@ -931,32 +1164,39 @@ const loginForm = document.getElementById("loginForm");
             if (res.ok) {
                 setStatus(text, "success");
             } else {
-                setStatus(text, "error");
+                setStatus(parseApiMessage(text, res.status, "Unable to send the reset link."), "error");
+            }
+        }
+
+        async function sendResetLink(email) {
+            const confirmed = confirm(`Email a password reset link to ${email}?`);
+            if (!confirmed) return;
+
+            const res = await fetchWithAdminAuth(`/api/users/${encodeURIComponent(email)}/send-reset-link`, {
+                method: "POST"
+            });
+
+            const text = await res.text();
+            if (res.ok) {
+                setStatus(text, "success");
+            } else {
+                setStatus(parseApiMessage(text, res.status, "Unable to reset this password."), "error");
             }
         }
 
         async function deleteUser(email) {
             if (!confirm(`Delete ${email}?`)) return;
-            const res = await fetch(`/api/users/${encodeURIComponent(email)}`, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
+            const res = await fetchWithAdminAuth(`/api/users/${encodeURIComponent(email)}`, {
+                method: "DELETE"
             });
             const text = await res.text();
             if (res.ok) { setStatus(text, "success"); loadUsers(); }
-            else { setStatus(text, "error"); }
+            else { setStatus(parseApiMessage(text, res.status, "Unable to delete this user."), "error"); }
         }
 
         // Logout
         logoutBtn.addEventListener("click", () => {
-            localStorage.removeItem("jwtToken");
-            token = null;
-            loginForm.style.display = "block";
-            uploadForm.style.display = "none";
-            fileTable.style.display = "none";
-            userManager.style.display = "none";
-            smtpSettings.style.display = "none";
-            userList.innerHTML = "";
-            setStatus("Logged out.");
+            clearAdminSession("Logged out.", "success");
         });
     
 
@@ -1018,7 +1258,7 @@ async function loadQuizzes() {
     if (!quizStatus || !quizTbody) return;
 
     if (!token) {
-        quizStatus.textContent = "Login required.";
+        quizStatus.textContent = "Admin sign-in required.";
         return;
     }
 
@@ -1029,12 +1269,10 @@ async function loadQuizzes() {
         const cat = (document.getElementById("quizCategoryFilter")?.value) || "All";
         const url = cat && cat !== "All" ? ("/api/quiz?category=" + encodeURIComponent(cat)) : "/api/quiz";
 
-        const res = await fetch(url, {
-            headers: { "Authorization": "Bearer " + token }
-        });
+        const res = await fetchWithAdminAuth(url);
 
         if (!res.ok) {
-            quizStatus.textContent = "Failed to load quizzes: " + res.status;
+            quizStatus.textContent = await readErrorResponse(res);
             return;
         }
 
@@ -1077,7 +1315,7 @@ async function loadImportHistory() {
     if (!historyStatus || !historyTbody) return;
 
     if (!token) {
-        historyStatus.textContent = "Login required.";
+        historyStatus.textContent = "Admin sign-in required.";
         return;
     }
 
@@ -1085,12 +1323,10 @@ async function loadImportHistory() {
     historyTbody.innerHTML = "";
 
     try {
-        const res = await fetch("/api/import/history?take=50", {
-            headers: { "Authorization": "Bearer " + token }
-        });
+        const res = await fetchWithAdminAuth("/api/import/history?take=50");
 
         if (!res.ok) {
-            historyStatus.textContent = "Failed to load import history: " + res.status;
+            historyStatus.textContent = await readErrorResponse(res);
             return;
         }
 
@@ -1183,14 +1419,13 @@ function wireDashboardButtonsOnce() {
                 if (quizStatus) quizStatus.textContent = "Deleting quiz...";
 
                 try {
-                    const res = await fetch("/api/quiz/" + encodeURIComponent(id), {
-                        method: "DELETE",
-                        headers: { "Authorization": "Bearer " + token }
+                    const res = await fetchWithAdminAuth("/api/quiz/" + encodeURIComponent(id), {
+                        method: "DELETE"
                     });
 
                     if (!res.ok) {
-                        const msg = await res.text().catch(() => "");
-                        if (quizStatus) quizStatus.textContent = "Delete failed: " + res.status + (msg ? (" - " + msg) : "");
+                        const msg = await readErrorResponse(res);
+                        if (quizStatus) quizStatus.textContent = "Delete failed: " + msg;
                         return;
                     }
 
@@ -1206,24 +1441,7 @@ function wireDashboardButtonsOnce() {
 
 document.addEventListener("DOMContentLoaded", () => {
     wireDashboardButtonsOnce();
-
-    const saved = localStorage.getItem("jwtToken");
-    if (saved) {
-        token = saved;
-        loginForm.style.display = "none";
-        uploadForm.style.display = "block";
-        fileTable.style.display = "block";
-        userManager.style.display = "block";
-        smtpSettings.style.display = "block";
-
-        loadFiles();
-        loadUsers();
-        loadSmtpSettings();
-        loadQuizCategories();
-        loadQuizzes();
-        loadImportHistory();
-        setStatus("Session restored. Admin tools are ready.", "success");
-    }
+    restoreAdminSession();
 });
 
 	</script>

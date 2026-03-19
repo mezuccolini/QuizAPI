@@ -38,14 +38,14 @@
         }
 
         main {
-            width: min(840px, 100%);
+            width: min(966px, 100%);
             margin: 0 auto;
             padding: 2rem 0 3rem;
         }
 
         .shell {
             display: grid;
-            grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+            grid-template-columns: minmax(0, 1.1fr) minmax(322px, 1.04fr);
             gap: 1.2rem;
         }
 
@@ -164,6 +164,50 @@
             margin-bottom: 0;
         }
 
+        .info-bubble {
+            margin-top: 1.15rem;
+            padding: 1rem 1.1rem;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 61, 87, 0.14);
+            background: linear-gradient(180deg, rgba(220, 235, 243, 0.78), rgba(255, 255, 255, 0.88));
+        }
+
+        .info-bubble h2 {
+            margin-bottom: 0.65rem;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+
+        .mini-form {
+            margin-top: 1rem;
+        }
+
+        .mini-form button {
+            margin-top: 1rem;
+        }
+
+        .mini-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .mini-actions button {
+            flex: 1 1 140px;
+            margin-top: 0;
+        }
+
+        .secondary-button {
+            background: rgba(255, 255, 255, 0.78);
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .secondary-button:hover {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
         @media (max-width: 780px) {
             .shell {
                 grid-template-columns: 1fr;
@@ -180,6 +224,12 @@
                 <p class="lead">Create a public user account with your email address, then verify it from the email we send you before signing in.</p>
 
                 <form id="registerForm">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" autocomplete="given-name" maxlength="50" pattern="[A-Za-z ]+" title="Use letters and spaces only." required />
+
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" autocomplete="family-name" maxlength="50" pattern="[A-Za-z ]+" title="Use letters and spaces only." required />
+
                     <label for="email">Email address</label>
                     <input type="email" id="email" autocomplete="email" required />
 
@@ -194,6 +244,16 @@
 
                 <div id="status" class="status" role="status" aria-live="polite" style="display:none;"></div>
 
+                <div class="info-bubble">
+                    <h2>What happens next</h2>
+                    <ul>
+                        <li>Create your account using a valid email address.</li>
+                        <li>Open the verification email from The Cert Master.</li>
+                        <li>Click the verification link to activate your account.</li>
+                        <li>After verification, you can sign in anywhere the user login flow is available.</li>
+                    </ul>
+                </div>
+
                 <div class="links">
                     <a href="/">Back to home</a>
                     <a href="/account.html">My account</a>
@@ -201,13 +261,24 @@
             </section>
 
             <aside class="panel">
-                <h2>What happens next</h2>
-                <ul>
-                    <li>Create your account using a valid email address.</li>
-                    <li>Open the verification email from The Cert Master.</li>
-                    <li>Click the verification link to activate your account.</li>
-                    <li>After verification, you can sign in anywhere the user login flow is available.</li>
-                </ul>
+                <h2>Account login</h2>
+                <p>Already verified your email address? Open your account page to sign in, change your password, and review your quiz history.</p>
+                <form id="loginForm" class="mini-form">
+                    <label for="loginEmail">User name</label>
+                    <input type="email" id="loginEmail" autocomplete="email" required />
+
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" autocomplete="current-password" required />
+
+                    <div class="mini-actions">
+                        <button type="submit">Sign in</button>
+                        <button type="button" id="logoutButton" class="secondary-button">Log out</button>
+                    </div>
+                </form>
+                <div id="loginStatus" class="status" role="status" aria-live="polite" style="display:none;"></div>
+                <div class="links">
+                    <a href="/account.html">Go to account login</a>
+                </div>
             </aside>
         </div>
     </main>
@@ -215,6 +286,11 @@
     <script>
         const form = document.getElementById("registerForm");
         const statusBox = document.getElementById("status");
+        const loginForm = document.getElementById("loginForm");
+        const loginStatusBox = document.getElementById("loginStatus");
+        const logoutButton = document.getElementById("logoutButton");
+        const firstNameInput = document.getElementById("firstName");
+        const lastNameInput = document.getElementById("lastName");
 
         function setStatus(message, tone = "info") {
             statusBox.style.display = "block";
@@ -222,9 +298,88 @@
             statusBox.textContent = message;
         }
 
+        function setLoginStatus(message, tone = "info") {
+            loginStatusBox.style.display = "block";
+            loginStatusBox.className = `status${tone === "info" ? "" : " " + tone}`;
+            loginStatusBox.textContent = message;
+        }
+
+        function parseApiMessage(text, status, fallbackMessage) {
+            if (!text) {
+                if (status === 429) return "Too many requests were sent. Please wait a moment and try again.";
+                if (status === 401) return "That sign-in attempt could not be completed.";
+                return fallbackMessage || `Request failed with status ${status}.`;
+            }
+
+            try {
+                const parsed = JSON.parse(text);
+                if (typeof parsed === "string" && parsed.trim()) return parsed.trim();
+                if (Array.isArray(parsed)) {
+                    const messages = parsed
+                        .map(item => item?.description || item?.Description || item?.message || item?.Message)
+                        .filter(Boolean);
+                    if (messages.length) return messages.join("; ");
+                }
+
+                return parsed.detail || parsed.title || parsed.message || parsed.Message || text;
+            } catch {
+                return text;
+            }
+        }
+
+        function normalizePlainText(value) {
+            return String(value ?? "")
+                .replace(/[^A-Za-z ]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function bindPlainTextInput(input) {
+            if (!input) return;
+
+            input.addEventListener("input", () => {
+                const normalized = normalizePlainText(input.value);
+                if (input.value !== normalized) {
+                    input.value = normalized;
+                }
+            });
+        }
+
+        function validatePlainTextField(input, label) {
+            const normalized = normalizePlainText(input.value);
+            input.value = normalized;
+
+            if (!normalized) {
+                return `${label} is required.`;
+            }
+
+            if (!/^[A-Za-z]+(?: [A-Za-z]+)*$/.test(normalized)) {
+                return `${label} can only contain letters and spaces.`;
+            }
+
+            return "";
+        }
+
+        bindPlainTextInput(firstNameInput);
+        bindPlainTextInput(lastNameInput);
+
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
+            const firstNameError = validatePlainTextField(firstNameInput, "First name");
+            if (firstNameError) {
+                setStatus(firstNameError, "error");
+                return;
+            }
+
+            const lastNameError = validatePlainTextField(lastNameInput, "Last name");
+            if (lastNameError) {
+                setStatus(lastNameError, "error");
+                return;
+            }
+
+            const firstName = firstNameInput.value;
+            const lastName = lastNameInput.value;
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
             const confirmPassword = document.getElementById("confirmPassword").value;
@@ -235,13 +390,13 @@
                 const response = await fetch("/api/auth/public-register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password, confirmPassword })
+                    body: JSON.stringify({ firstName, lastName, email, password, confirmPassword })
                 });
 
                 const text = await response.text();
 
                 if (!response.ok) {
-                    setStatus(text || "Registration failed.", "error");
+                    setStatus(parseApiMessage(text, response.status, "Registration failed."), "error");
                     return;
                 }
 
@@ -254,8 +409,48 @@
                 form.reset();
                 setStatus(message, "success");
             } catch (error) {
-                setStatus("Registration error: " + error.message, "error");
+                setStatus(error.message || "Registration could not be completed right now.", "error");
             }
+        });
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value;
+
+            setLoginStatus("Signing in...");
+
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({ Email: email, Password: password })
+                });
+
+                const text = await response.text();
+                if (!response.ok) {
+                    setLoginStatus(parseApiMessage(text, response.status, "Sign-in failed."), "error");
+                    return;
+                }
+
+                const payload = text ? JSON.parse(text) : {};
+                if (!payload.token) {
+                    setLoginStatus("Sign-in succeeded but no token was returned.", "error");
+                    return;
+                }
+
+                localStorage.setItem("jwtToken", payload.token);
+                setLoginStatus("Signed in successfully. Opening your account...", "success");
+                window.location.assign("/account.html");
+            } catch (error) {
+                setLoginStatus(error.message || "Sign-in could not be completed right now.", "error");
+            }
+        });
+
+        logoutButton.addEventListener("click", () => {
+            localStorage.removeItem("jwtToken");
+            setLoginStatus("You have been logged out on this browser.", "success");
         });
     </script>
 </body>

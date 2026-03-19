@@ -12,12 +12,17 @@ The format is based on Keep a Changelog, and this project follows semantic-style
 - Persisted signed-in quiz history with pass/fail tracking
 - Public email verification flow support in the documented user path
 - Quiz result home page for the most recent submitted attempt
+- Rate limiting for auth-sensitive public endpoints and quiz loading
+- Structured security logging for auth failures, admin actions, SMTP changes, and import failures
 
 ### Changed
 
 - README now documents the public registration, account, and result-home flows
 - FAQ now covers account history, signed-in quiz tracking, and the post-submit Home button flow
 - Quiz runner now unlocks a `Home` button after submit and routes users into a result summary page
+- Admin dashboard now restores only valid admin sessions and clears stale or unauthorized tokens automatically
+- User-facing browser pages now surface cleaner API error messages
+- Profile-oriented text inputs are now normalized to plain letters and spaces where appropriate
 
 ## [v0.1.0-alpha] - 2026-03-17
 

@@ -2,6 +2,9 @@ namespace QuizAPI.DTO
 {
     public class QuizAttemptSubmitDto
     {
+        public string QuizTitle { get; set; } = string.Empty;
+        public List<string> SelectedCategories { get; set; } = new();
+        public List<Guid> DeliveredQuestionIds { get; set; } = new();
         public List<QuestionAttemptDto> Answers { get; set; } = new();
     }
 

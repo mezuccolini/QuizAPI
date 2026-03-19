@@ -30,6 +30,9 @@ Optional production settings:
 ```text
 Logging__LogLevel__Default=Information
 Logging__LogLevel__Microsoft=Warning
+RateLimiting__AuthAttemptsPerMinute=8
+RateLimiting__GuestQuizLoadsPerMinute=20
+RateLimiting__AuthenticatedQuizLoadsPerMinute=60
 ```
 
 ## Build And Publish
@@ -100,12 +103,24 @@ Be aware of runtime storage:
 
 These runtime folders should be persisted appropriately on the host and not treated as source-controlled assets.
 
+## Security Notes
+
+Production behavior now includes:
+
+- rate limits on public authentication-sensitive endpoints
+- separate quiz-load rate limits for guests and authenticated users
+- automatic admin-session rejection in the browser when a token expires or lacks the `Admin` role
+- structured logs for auth failures, rate-limit rejections, password-reset activity, SMTP changes, and admin management actions
+
+If you tighten or relax rate limits in production, record those settings alongside the deployment so operators know the expected thresholds.
+
 ## Pre-Deployment Checklist
 
 - production connection string is set
 - JWT key is set and strong
 - CORS origins are correct
 - SMTP settings are configured if email features are needed
+- rate-limiting values are confirmed for the target environment
 - `PublicApp__BaseUrl` is set correctly for email verification links
 - database migration has been applied
 - sample/dev credentials are not relied on in production
@@ -122,6 +137,7 @@ These runtime folders should be persisted appropriately on the host and not trea
 - apply production migration in a controlled step
 - smoke test `/`, `/swapi.html`, and `/health`
 - verify admin login and a sample quiz import
+- verify public login / reset / resend flows return sensible `429` messages under repeated requests
 - publish the matching Git tag and GitHub release notes
 
 ## Post-Deployment Smoke Test

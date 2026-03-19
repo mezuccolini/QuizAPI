@@ -11,9 +11,12 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Text;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using QuizAPI.Data;
+using QuizAPI.Models;
 using QuizAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +25,12 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 var jwtKey = builder.Configuration["Jwt:Key"];
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var authAttemptsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:AuthAttemptsPerMinute")
+    ?? (builder.Environment.IsDevelopment() ? 30 : 8);
+var guestQuizLoadsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:GuestQuizLoadsPerMinute")
+    ?? (builder.Environment.IsDevelopment() ? 60 : 20);
+var authenticatedQuizLoadsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:AuthenticatedQuizLoadsPerMinute")
+    ?? (builder.Environment.IsDevelopment() ? 120 : 60);
 
 if (string.IsNullOrWhiteSpace(jwtIssuer))
     throw new InvalidOperationException("Jwt:Issuer is required. Set it in configuration or with the Jwt__Issuer environment variable.");
@@ -61,6 +70,73 @@ if (OperatingSystem.IsWindows())
 builder.Services.AddControllers()
     .AddJsonOptions(o => { o.JsonSerializerOptions.PropertyNamingPolicy = null; });
 builder.Services.AddHealthChecks();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var logger = context.HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("RateLimiting");
+        logger.LogWarning(
+            "Rate limit rejected request for {Method} {Path} from {RemoteIp}",
+            context.HttpContext.Request.Method,
+            context.HttpContext.Request.Path,
+            context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            "{\"message\":\"Too many requests. Please wait a moment and try again.\"}",
+            cancellationToken);
+    };
+
+    options.AddPolicy("AuthSensitive", httpContext =>
+    {
+        var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"auth:{remoteIp}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = authAttemptsPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+
+    options.AddPolicy("QuizLoad", httpContext =>
+    {
+        if (httpContext.User?.Identity?.IsAuthenticated == true)
+        {
+            var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? httpContext.User.Identity?.Name
+                ?? "authenticated";
+
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: $"quiz-auth:{userId}",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = authenticatedQuizLoadsPerMinute,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                });
+        }
+
+        var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"quiz-guest:{remoteIp}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = guestQuizLoadsPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -138,7 +214,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     options.Lockout.MaxFailedAccessAttempts = 5;
@@ -232,6 +308,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
@@ -241,7 +318,7 @@ using (var scope = app.Services.CreateScope())
     var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
     var db = scope.ServiceProvider.GetRequiredService<QuizDbContext>();
     var sampleDataSeeder = scope.ServiceProvider.GetRequiredService<SampleDataSeeder>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
     if (app.Environment.IsDevelopment())
@@ -263,10 +340,12 @@ using (var scope = app.Services.CreateScope())
         var devAdminUser = await userManager.FindByEmailAsync(devAdminEmail);
         if (devAdminUser == null)
         {
-            devAdminUser = new IdentityUser
+            devAdminUser = new ApplicationUser
             {
                 UserName = devAdminEmail,
                 Email = devAdminEmail,
+                FirstName = "Admin",
+                LastName = "User",
                 EmailConfirmed = true
             };
 

@@ -5,7 +5,14 @@ namespace QuizAPI.DTO
         public Guid QuizId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Category { get; set; } = "Uncategorized";
+        public int TotalAvailableQuestions { get; set; }
         public List<QuestionDto> Questions { get; set; } = new();
+    }
+
+    public class CustomQuizAvailabilityDto
+    {
+        public int TotalAvailableQuestions { get; set; }
+        public Dictionary<string, int> CategoryQuestionCounts { get; set; } = new();
     }
 
     public class QuestionDto

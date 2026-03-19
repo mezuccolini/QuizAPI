@@ -5,7 +5,7 @@ using QuizAPI.Models;
 
 namespace QuizAPI.Data
 {
-    public class QuizDbContext : IdentityDbContext<IdentityUser>
+    public class QuizDbContext : IdentityDbContext<ApplicationUser>
     {
         public QuizDbContext(DbContextOptions<QuizDbContext> options) : base(options) { }
 

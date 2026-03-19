@@ -9,8 +9,13 @@ namespace QuizAPI.Controllers
     public class ImportController : ControllerBase
     {
         private readonly QuizImportService _import;
+        private readonly ILogger<ImportController> _logger;
 
-        public ImportController(QuizImportService import) => _import = import;
+        public ImportController(QuizImportService import, ILogger<ImportController> logger)
+        {
+            _import = import;
+            _logger = logger;
+        }
 
         [Authorize(Roles = "Admin")]
         [HttpPost("upload")]
@@ -19,6 +24,7 @@ namespace QuizAPI.Controllers
         public async Task<IActionResult> Upload([FromForm] FileUploadModel model)
         {
             var msg = await _import.SaveUploadAsync(model.File);
+            _logger.LogInformation("Admin uploaded file {FileName}", model.File?.FileName);
             return Ok(msg);
         }
 
@@ -29,6 +35,7 @@ namespace QuizAPI.Controllers
         public async Task<IActionResult> UploadPackage([FromForm] FileUploadModel model)
         {
             var result = await _import.SaveUploadPackageAsync(model.File);
+            _logger.LogInformation("Admin uploaded package {FileName}", model.File?.FileName);
             return Ok(result);
         }
 
@@ -40,11 +47,13 @@ namespace QuizAPI.Controllers
             try
             {
                 var result = await _import.ProcessCsvAsync(fileName);
+                _logger.LogInformation("Admin processed import file {FileName}", fileName);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return Problem(ex.Message);
+                _logger.LogError(ex, "Import processing failed for file {FileName}", fileName);
+                return Problem("Import processing failed. Review the import file format and server logs, then try again.");
             }
         }
 

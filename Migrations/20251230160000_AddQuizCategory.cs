@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using QuizAPI.Data;
 
 #nullable disable
 
 namespace QuizAPI.Migrations
 {
+    [DbContext(typeof(QuizDbContext))]
+    [Migration("20251230160000_AddQuizCategory")]
     public partial class AddQuizCategory : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

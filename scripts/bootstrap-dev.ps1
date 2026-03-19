@@ -34,7 +34,7 @@ Write-Host "Available local entry points:" -ForegroundColor Green
 Write-Host "  Landing:  http://localhost:5185/"
 Write-Host "  Register: http://localhost:5185/register.html"
 Write-Host "  Quiz:     http://localhost:5185/quiz.html"
-Write-Host "  Admin:    http://localhost:5185/upload.html"
+Write-Host "  Admin:    http://localhost:5185/manage.html"
 Write-Host "  Swagger:  http://localhost:5185/swapi.html"
 
 if ($RunApp) {
