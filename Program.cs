@@ -33,6 +33,8 @@ var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnec
 var publicBaseUrl = builder.Configuration["PublicApp:BaseUrl"];
 var swaggerEnabled = builder.Configuration.GetValue<bool?>("Swagger:Enabled")
     ?? builder.Environment.IsDevelopment();
+var httpsRedirectionEnabled = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled")
+    ?? builder.Environment.IsDevelopment();
 var authAttemptsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:AuthAttemptsPerMinute")
     ?? (builder.Environment.IsDevelopment() ? 30 : 8);
 var guestQuizLoadsPerMinute = builder.Configuration.GetValue<int?>("RateLimiting:GuestQuizLoadsPerMinute")
@@ -371,7 +373,10 @@ if (swaggerEnabled)
 }
 
 app.UseForwardedHeaders();
-app.UseHttpsRedirection();
+if (httpsRedirectionEnabled)
+{
+    app.UseHttpsRedirection();
+}
 app.UseHttpLogging();
 app.UseCors(CorsPolicyName);
 app.UseDefaultFiles();
@@ -441,6 +446,92 @@ using (var scope = app.Services.CreateScope())
     if (!await roleManager.RoleExistsAsync("User"))
         await roleManager.CreateAsync(new IdentityRole("User"));
 
+    var bootstrapAdminEmail = configuration["BootstrapAdmin:Email"]?.Trim();
+    var bootstrapAdminPassword = configuration["BootstrapAdmin:Password"];
+    var bootstrapAdminFirstName = configuration["BootstrapAdmin:FirstName"]?.Trim();
+    var bootstrapAdminLastName = configuration["BootstrapAdmin:LastName"]?.Trim();
+
+    if (!string.IsNullOrWhiteSpace(bootstrapAdminEmail))
+    {
+        if (string.IsNullOrWhiteSpace(bootstrapAdminPassword))
+        {
+            throw new InvalidOperationException("BootstrapAdmin:Password is required when BootstrapAdmin:Email is set.");
+        }
+
+        var bootstrapAdminUser = await userManager.FindByEmailAsync(bootstrapAdminEmail);
+        if (bootstrapAdminUser == null)
+        {
+            bootstrapAdminUser = new ApplicationUser
+            {
+                UserName = bootstrapAdminEmail,
+                Email = bootstrapAdminEmail,
+                FirstName = string.IsNullOrWhiteSpace(bootstrapAdminFirstName) ? "Bootstrap" : bootstrapAdminFirstName,
+                LastName = string.IsNullOrWhiteSpace(bootstrapAdminLastName) ? "Admin" : bootstrapAdminLastName,
+                EmailConfirmed = true
+            };
+
+            var createBootstrapAdminResult = await userManager.CreateAsync(bootstrapAdminUser, bootstrapAdminPassword);
+            if (!createBootstrapAdminResult.Succeeded)
+            {
+                var errors = string.Join("; ", createBootstrapAdminResult.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to create bootstrap admin user: {errors}");
+            }
+
+            startupLogger.LogInformation("Created bootstrap admin account {Email}", bootstrapAdminEmail);
+        }
+        else
+        {
+            var updated = false;
+
+            if (!bootstrapAdminUser.EmailConfirmed)
+            {
+                bootstrapAdminUser.EmailConfirmed = true;
+                updated = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(bootstrapAdminFirstName) &&
+                !string.Equals(bootstrapAdminUser.FirstName, bootstrapAdminFirstName, StringComparison.Ordinal))
+            {
+                bootstrapAdminUser.FirstName = bootstrapAdminFirstName;
+                updated = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(bootstrapAdminLastName) &&
+                !string.Equals(bootstrapAdminUser.LastName, bootstrapAdminLastName, StringComparison.Ordinal))
+            {
+                bootstrapAdminUser.LastName = bootstrapAdminLastName;
+                updated = true;
+            }
+
+            if (updated)
+            {
+                var updateBootstrapAdminResult = await userManager.UpdateAsync(bootstrapAdminUser);
+                if (!updateBootstrapAdminResult.Succeeded)
+                {
+                    var errors = string.Join("; ", updateBootstrapAdminResult.Errors.Select(e => e.Description));
+                    throw new InvalidOperationException($"Failed to update bootstrap admin user: {errors}");
+                }
+            }
+
+            startupLogger.LogInformation("Bootstrap admin account already exists for {Email}", bootstrapAdminEmail);
+        }
+
+        if (!await userManager.IsInRoleAsync(bootstrapAdminUser, "Admin"))
+        {
+            var addBootstrapAdminRoleResult = await userManager.AddToRoleAsync(bootstrapAdminUser, "Admin");
+            if (!addBootstrapAdminRoleResult.Succeeded)
+            {
+                var errors = string.Join("; ", addBootstrapAdminRoleResult.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to assign Admin role to bootstrap admin user: {errors}");
+            }
+        }
+
+        if (!await userManager.IsInRoleAsync(bootstrapAdminUser, "User"))
+        {
+            await userManager.AddToRoleAsync(bootstrapAdminUser, "User");
+        }
+    }
+
     if (app.Environment.IsDevelopment())
     {
         var devAdminEmail = configuration["DevAdmin:Email"] ?? "admin@quizapi.local";
@@ -483,9 +574,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 startupLogger.LogInformation(
-    "QuizAPI started in {Environment}. SwaggerEnabled={SwaggerEnabled}. BaseUrl={BaseUrl}. Health endpoints: /health/live, /health/ready, /health",
+    "QuizAPI started in {Environment}. SwaggerEnabled={SwaggerEnabled}. HttpsRedirectionEnabled={HttpsRedirectionEnabled}. BaseUrl={BaseUrl}. Health endpoints: /health/live, /health/ready, /health",
     app.Environment.EnvironmentName,
     swaggerEnabled,
+    httpsRedirectionEnabled,
     string.IsNullOrWhiteSpace(publicBaseUrl) ? "not-set" : publicBaseUrl);
 
 app.Run();

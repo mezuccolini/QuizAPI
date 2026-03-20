@@ -7,12 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="QuizAPI.Bootstrapper\**\*.cs" />
     <Compile Remove="QuizAPI_Source_Code\**\*.cs" />
     <Compile Remove="QuizAPI.Tests\**\*.cs" />
+    <Content Remove="QuizAPI.Bootstrapper\**" />
     <Content Remove="QuizAPI_Source_Code\**" />
     <Content Remove="QuizAPI.Tests\**" />
+    <EmbeddedResource Remove="QuizAPI.Bootstrapper\**" />
     <EmbeddedResource Remove="QuizAPI_Source_Code\**" />
     <EmbeddedResource Remove="QuizAPI.Tests\**" />
+    <None Remove="QuizAPI.Bootstrapper\**" />
     <None Remove="QuizAPI_Source_Code\**" />
     <None Remove="QuizAPI.Tests\**" />
   </ItemGroup>
