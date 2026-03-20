@@ -71,7 +71,8 @@ Place the deployment package under a root folder named `Deployment`, then run:
 
 1. [ensure-server-prerequisites.ps1](scripts/ensure-server-prerequisites.ps1)
 2. [install-production-application.ps1](scripts/install-production-application.ps1)
-3. Copy and edit [production-settings.template.psd1](scripts/production-settings.template.psd1)
+3. [configure-smtp-test.ps1](scripts/configure-smtp-test.ps1) if you want local SMTP testing wired up immediately
+4. Copy and edit [production-settings.template.psd1](scripts/production-settings.template.psd1)
 
 Recommended package layout on the target server:
 
@@ -193,6 +194,34 @@ Default installation assumptions:
 - deployment root: `C:\Deployment`
 
 If your production host needs different names or paths, override the script parameters.
+
+### Script 3: Configure SMTP For Application Testing
+
+[configure-smtp-test.ps1](scripts/configure-smtp-test.ps1) will:
+
+- verify the Windows SMTP service is installed
+- start `IISADMIN` and `SMTPSVC` if needed
+- write `C:\Deployment\publish\App_Data\smtp_settings.json` for QuizAPI
+- default the sender address from `PublicBaseUrl` when a settings file is present
+- optionally send a direct SMTP test email
+
+The script is meant for local application SMTP testing after the install completes. It does not replace real production relay hardening, but it gives the app a working SMTP profile quickly.
+
+Example:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File C:\Deployment\scripts\configure-smtp-test.ps1 `
+  -DeploymentRoot C:\Deployment `
+  -TestRecipientEmail you@example.com
+```
+
+How sender defaults are chosen:
+
+- if `production-settings.psd1` exists and `PublicBaseUrl = 'http://quizapi.local'`, the script defaults `FromEmail` to `no-reply@quizapi.local`
+- if no host can be derived, it falls back to `BootstrapAdminEmail`
+- if neither is available, it falls back to `no-reply@localhost`
+
+This keeps SMTP testing aligned with the same hostname pattern used by `PublicBaseUrl` and `BootstrapAdminEmail`.
 
 ## Database
 
